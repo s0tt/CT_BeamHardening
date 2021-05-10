@@ -22,10 +22,10 @@ parser.add_argument("--output-absolute-path", "-o", required=True, type=str,
 args = parser.parse_args()
 
 
-# default parameters of our CT-scan: (Units for hdf5 file are still unclear)
-detector_pixel_size = 0.127 # [mm]
-distance_source_axis = 363.074699401855/1000 # Source to Object-Stage (Center of rotation) [m]
-distance_source_detector = 1229.268/1000 # [m]
+# default parameters of our CT-scan: 
+detector_pixel_size = 0.000127 # [m]
+distance_source_axis = 0.00363074699401855 # Source to Object-Stage (Center of rotation) [m]
+distance_source_detector = 1.229268# [m]
 
 
 def hdf5_tiff_builder(file_name: str, angle: int, detector_pixel_size: float,
