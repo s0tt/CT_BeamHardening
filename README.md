@@ -1,2 +1,14 @@
 # DL_BeamHardening
 
+## Dataset preparation scripts
+
+### tiff_to_hdf5
+Requirements, install:  
+```
+<python-interpreter> -m pip install pyqt5 numpy 
+```
+How to run: 
+
+```
+<python-interpreter> tiff_to_hdf.py -f <path-tiff-file-folder> -o <absolute-path-of-output>
+```
