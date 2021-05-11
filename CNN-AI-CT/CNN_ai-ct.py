@@ -26,6 +26,48 @@ class CNN_AICT(pl.LightningModule):
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
             nn.BatchNorm2d(64),
             nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
         )
         self.endLayer = nn.Sequential(
             nn.Conv2d(64, 1, 3, padding=1, padding_mode="reflect")
@@ -33,10 +75,9 @@ class CNN_AICT(pl.LightningModule):
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
-        out = self.startLayer(x)
-        for i in range(15):
-            out = self.middleLayer(out)
-        out3 = self.endLayer(out)
+        out1 = self.startLayer(x)
+        out2 = self.middleLayer(out1)
+        out3 = self.endLayer(out2)
         return out3
 
     def training_step(self, batch, batch_idx):
