@@ -11,21 +11,8 @@ import numpy as np
 from PIL import Image 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-def load_images_in_numpy_array(image_path): 
-   images = []
-
-   for root, dirs, files in os.walk(image_path):
-      for name in sorted(files):
-         try: 
-            images.append(np.array(Image.open(os.path.join(root, name)), dtype=np.float64)) 
-         except: 
-            raise Exception("Folder does contain files which are no readable images")
-
-   stacked_images = np.stack(images)
-   return stacked_images
-
+number_of_nodes = 1 
+number_of_gpus = 0 
 
 class CNN_AICT(pl.LightningModule):
 
@@ -79,8 +66,8 @@ train_loader = DataLoader(dataset, batch_size=1)
 
 # init model
 cnn = CNN_AICT()
+cnn.to(device)
 
-# trainer = pl.Trainer(gpus=8) (if you have GPUs)
-trainer = pl.Trainer()
+trainer = pl.Trainer(gpus=number_of_gpus, num_nodes=number_of_nodes)
 trainer.fit(cnn, train_loader)
 
