@@ -1,0 +1,27 @@
+{volumeprimitive1}
+[geometry]
+resolution = 3.751052e-07 3.751052e-07 3.751052e-07
+scale = 1 1 1
+rotate = 1 0 0 0 1 0 0 0 1
+unit = m
+[volume]
+volume = volume1
+[description]
+text = /home/kellermx/Documents/reconstruction/volume.hdf5
+
+{volume1}
+[representation]
+size = 20 20 20
+bitsperelement = 32
+datatype = float
+datarange = -1e+30 1e+30
+[file1]
+fileformat = raw
+size = 20 20 20
+name = volume.hdf5
+skipheader = 6752
+bitsperelement = 32
+datatype = float
+datarange = -1e+30 1e+30
+orientation = xyz
+mirror = 0 0 0
