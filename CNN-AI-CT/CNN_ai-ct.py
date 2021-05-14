@@ -14,7 +14,8 @@ from PIL import Image
 device = "cuda" if torch.cuda.is_available() else "cpu"
 number_of_nodes = 1 
 number_of_gpus = 0 
-batch_size = 12
+batch_size = 16
+dataset_stride = 128
 
 
 class ConcatDataset(torch.utils.data.Dataset):

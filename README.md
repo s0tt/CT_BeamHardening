@@ -10,5 +10,5 @@ Requirements, install:
 How to run: 
 
 ```
-<python-interpreter> tiff_to_hdf.py -f <path-tiff-file-folder> -o <absolute-path-of-output>
+<python-interpreter> tiff_to_hdf5.py -f <path-tiff-file-folder> -o <absolute-path-of-output>
 ```
