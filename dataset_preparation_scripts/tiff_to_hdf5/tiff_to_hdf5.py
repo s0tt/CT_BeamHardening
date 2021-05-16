@@ -34,7 +34,8 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
                      
    with h5py.File(file_name, "w") as f:
       # angles are in rad. start at 0 and go to shortly before 6.28 .. (2*pi)
-      angle_rad = np.linspace(0, 2*np.pi, load_image_in_numpy_array(image_paths[0]).shape[0], dtype=np.float64) 
+      img_0 = load_image_in_numpy_array(image_paths[0])
+      angle_rad = np.linspace(0, 2*np.pi, img_0.shape[1], dtype=np.float64) 
       angle = f.create_dataset("Angle", data=angle_rad, dtype='float64')
       angle.attrs['MATLAB_class'] = 'double'
       f["DetectorPixelSizeX"] = detector_pixel_size
@@ -53,16 +54,17 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       f["DistanceSourceDetector"].attrs['MATLAB_class'] = 'double'
 
       image_dataset = None
-      for img_path in image_paths:
+      for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
-            print("Create image dataset with: ", img_path)
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=True, maxshape=(None,None) )
+            print("Create image dataset with: ", img_path) 
+            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=((1, img_0.shape[1], img_0.shape[2])), maxshape=(None, None, None))
          else:
             print("Appending image: ", img_path)
+            print("Shape: ", image_dataset.shape)
             img_current = load_image_in_numpy_array(img_path)
             image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
-            image_dataset[-img_current.shape[0]:] = img_current
-      image_dataset.attrs['MATLAB_class'] = 'double'    
+            image_dataset[idx, :, :] = img_current
+      image_dataset.attrs['MATLAB_class'] = 'double'
       type_ = f.create_dataset("Type", data=type_data, dtype='uint16')
       type_.attrs['MATLAB_class'] = 'char'
       type_.attrs['MATLAB_int_decode'] = 2
@@ -70,7 +72,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
 
 def load_image_in_numpy_array(image_path): 
          try: 
-            return np.array(Image.open(image_path), dtype=np.float64)
+            return np.expand_dims(np.array(Image.open(image_path), dtype=np.float64), axis=0)
          except: 
             raise Exception("image path not readable")
 
