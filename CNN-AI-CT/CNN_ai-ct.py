@@ -7,7 +7,6 @@ from torchvision import transforms
 from torchvision.datasets import MNIST
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
-import numpy as np
 
 from dataloader import get_dataloader
 
@@ -16,16 +15,16 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 number_of_nodes = 1 
 number_of_gpus = 0 
 batch_size = 16
-dataset_stride = 128
+dataset_stride = 3 # 128 default
+num_pixel = 5 # 256 default value
 
 
 dataset_paths = ["", ""]
 
-train_loader = get_dataloader(batch_size, number_of_gpus, dataset_stride, dataset_paths)
+train_loader = get_dataloader(batch_size, number_of_gpus, num_pixel, dataset_stride, dataset_paths)
 
 for idx, input_seq in enumerate(train_loader):
-    pass 
-
+    pass
 
 
 class CNN_AICT(pl.LightningModule):
