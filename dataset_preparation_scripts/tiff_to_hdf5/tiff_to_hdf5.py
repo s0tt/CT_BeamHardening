@@ -57,7 +57,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
             print("Create image dataset with: ", img_path) 
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=((1, img_0.shape[1], img_0.shape[2])), maxshape=(None, None, None))
+            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=((1, img_0.shape[1], img_0.shape[2])), compression="gzip", maxshape=(None, None, None))
          else:
             print("Appending image: ", img_path)
             print("Shape: ", image_dataset.shape)
