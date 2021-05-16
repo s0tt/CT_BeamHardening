@@ -83,8 +83,10 @@ def get_image_list(image_dir):
 
 
 # extracted and saved them from the CT/Matlab_KSK/ReferenceProjections.hdf5 in ctutils 
-dimension_data = np.loadtxt(os.path.join('parameter_files', 'dimension_hdf5.txt'), delimiter=',')
-type_data = np.loadtxt(os.path.join('parameter_files', 'type_hdf5.txt'), delimiter=',')
+dimension_data = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                 'parameter_files', 'dimension_hdf5.txt'), delimiter=',')
+type_data = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                 'parameter_files', 'type_hdf5.txt'), delimiter=',')
 
 img_paths = get_image_list(args.tiff_files_path)
 
