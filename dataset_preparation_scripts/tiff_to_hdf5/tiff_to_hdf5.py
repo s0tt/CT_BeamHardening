@@ -35,7 +35,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
    with h5py.File(file_name, "w") as f:
       # angles are in rad. start at 0 and go to shortly before 6.28 .. (2*pi)
       img_0 = load_image_in_numpy_array(image_paths[0])
-      angle_rad = np.linspace(0, 2*np.pi, img_0.shape[1], dtype=np.float64) 
+      angle_rad = np.linspace(0, 2*np.pi, len(image_paths), dtype=np.float64) 
       angle = f.create_dataset("Angle", data=angle_rad, dtype='float64')
       angle.attrs['MATLAB_class'] = 'double'
       f["DetectorPixelSizeX"] = detector_pixel_size
@@ -56,11 +56,8 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       image_dataset = None
       for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
-            print("Create image dataset with: ", img_path) 
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=((1, img_0.shape[1], img_0.shape[2])), compression="gzip", maxshape=(None, None, None))
+            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='uint16', chunks=True, maxshape=(None, None, None))
          else:
-            print("Appending image: ", img_path)
-            print("Shape: ", image_dataset.shape)
             img_current = load_image_in_numpy_array(img_path)
             image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
             image_dataset[idx, :, :] = img_current
