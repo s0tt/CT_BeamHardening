@@ -39,4 +39,17 @@ with h5py.File(filename, "r") as f:
 
 
 f = nx.nxload("".join([args.output_file_name, ".hdf5"]))
+
+
 print(f.tree)
+
+
+"""
+Stuff from AI-CIT
+"""
+self.num_samples_in_x = 0
+while(self.stride*self.num_samples_in_x+self.num_pixel <= self.x): 
+    self.num_samples_in_x+=1 
+self.num_samples_in_z = 0
+while(self.stride*self.num_samples_in_z+self.num_pixel <= self.z): 
+      self.num_samples_in_z+=1 
