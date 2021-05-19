@@ -15,19 +15,16 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 number_of_nodes = 1 
 number_of_gpus = 0 
 batch_size = 16
-dataset_stride = 3 # 128 default
-num_pixel = 8 # 256 default value
+dataset_stride = 128 
+num_pixel = 256 
 
 
-dataset_paths = [("/Users/maxkeller/Documents/Uni/Softwaretechnik/ENPRO/dl_beamhardening/test_data/volume.hdf5", "/Users/maxkeller/Documents/Uni/Softwaretechnik/ENPRO/dl_beamhardening/test_data/volume.hdf5")]
+dataset_paths = [("path_bh", "path_gt")] 
 
 train_loader = get_dataloader(batch_size, number_of_gpus, num_pixel, dataset_stride, dataset_paths)
 
-counter = 0  
 for idx, input_seq in enumerate(train_loader):
-    counter += batch_size
     pass
-print(counter)
 
 class CNN_AICT(pl.LightningModule):
 
