@@ -92,68 +92,6 @@ def worker_fn(dataset, index_queue, output_queue):
            break
        output_queue.put((index, dataset[index]))
 
-
-# DataLoader as explained in: https://www.pytorchlightning.ai/blog/dataloaders-explained
-class AsynchronLoader(DataLoader):
-    def __init__(self, dataset, batch_size=64, num_workers=1, prefetch_batches=2, **kwargs):
-
-        super().__init__(dataset, batch_size, **kwargs)
-
-        self.num_workers = num_workers
-        self.prefetch_batches = prefetch_batches
-        self.output_queue = multiprocessing.Queue()
-        self.index_queues = []
-        self.workers = []
-        self.worker_cycle = itertools.cycle(range(num_workers))
-        self.cache = {}
-        self.prefetch_index = 0
-
-        for _ in range(num_workers):
-            index_queue = multiprocessing.Queue()
-            worker = multiprocessing.Process(
-                target=worker_fn, args=(self.dataset, index_queue, self.output_queue)
-            )
-            worker.daemon = True
-            worker.start()
-            self.workers.append(worker)
-            self.index_queues.append(index_queue)
-
-        self.prefetch()
-
-    def prefetch(self):
-        while (self.prefetch_index < len(self.dataset) and self.prefetch_index < self.index + 2 * self.num_workers * self.batch_size):
-            # if the prefetch_index hasn't reached the end of the dataset
-            # and it is not 2 batches ahead, add indexes to the index queues
-            self.index_queues[next(self.worker_cycle)].put(self.prefetch_index)
-            self.prefetch_index += 1
-
-    def get(self):
-        self.prefetch()
-        if self.index in self.cache:
-            item = self.cache[self.index]
-            del self.cache[self.index]
-        else:
-            while True:
-                try:
-                    (index, data) = self.output_queue.get(timeout=0)
-                except queue.Empty:  # output queue empty, keep trying
-                    continue
-                if index == self.index:  # found our item, ready to return
-                    item = data
-                    break
-                else:  # item isn't the one we want, cache for later
-                    self.cache[index] = data
-
-        self.index += 1
-        return item
-
-    def __iter__(self):
-        self.index = 0
-        self.cache = {}
-        self.prefetch_index = 0
-        self.prefetch()
-        return self
-
 def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, shuffle=True):
     """
         @Args:
@@ -169,7 +107,9 @@ def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, 
                 shuffle=shuffle,
                 num_workers=number_of_gpus,
                 pin_memory=True, # loads them directly in cuda pinned memory 
-                drop_last=True) # drop the last incomplete batch
-    
+                drop_last=True,# drop the last incomplete batch
+                prefetch_factor=2,# num of (2 * num_workers) samples prefetched
+                persistent_workers=False # keep workers persistent after dataset loaded once
+                ) 
     return train_loader
 
