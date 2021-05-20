@@ -45,16 +45,20 @@ def conv_attenuation(img):
     return img_att
 
 
-for root, dirs, files in os.walk(args.file_path):
-    img_white = np.array(tifffile.imread(args.white_path), dtype=np.float64)
-    for name in sorted(files):
-        img = np.array(tifffile.imread(os.path.join(root, name)), dtype=np.float64)
-        img = ffc(img, img_white)
-        img = conv_attenuation(img)
+def main():
+    for root, dirs, files in os.walk(args.file_path):
+        img_white = np.array(tifffile.imread(args.white_path), dtype=np.float64)
+        for name in sorted(files):
+            img = np.array(tifffile.imread(os.path.join(root, name)), dtype=np.float64)
+            img = ffc(img, img_white)
+            img = conv_attenuation(img)
 
-        if args.overwrite == 1:
-            #img_pil.save(os.path.join(root, name))
-            tifffile.imsave(os.path.join(root, name), img, dtype=np.float64)
-        else:
-            #img_pil.save(os.path.join(args.output_path, name))
-            tifffile.imsave(os.path.join(args.output_path, name), img, dtype=np.float64)
+            if args.overwrite == 1:
+                #img_pil.save(os.path.join(root, name))
+                tifffile.imsave(os.path.join(root, name), img, dtype=np.float64)
+            else:
+                #img_pil.save(os.path.join(args.output_path, name))
+                tifffile.imsave(os.path.join(args.output_path, name), img, dtype=np.float64)
+
+if __name__ == "main":
+    main()

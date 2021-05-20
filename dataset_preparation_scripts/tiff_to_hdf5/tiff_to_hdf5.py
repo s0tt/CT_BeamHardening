@@ -3,7 +3,9 @@ import h5py
 import numpy as np
 from PIL import Image 
 import os 
-import argparse 
+import argparse
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.."))
 from dataset_preparation_scripts.preprocessing.preprocess import ffc, conv_attenuation
 
 
@@ -72,8 +74,9 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
 
 def load_image_in_numpy_array(image_path): 
          try: 
-            img = preprocess(np.array(Image.open(image_path), dtype=np.float64), axis=0)
-            return np.expand_dims(img)
+            img = Image.open(image_path)
+            img = preprocess(np.array(img, dtype=np.float64))
+            return np.expand_dims(img, axis=0)
          except: 
             raise Exception("image path not readable")
 
