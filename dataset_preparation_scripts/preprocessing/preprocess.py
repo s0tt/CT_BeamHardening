@@ -4,22 +4,6 @@ import tifffile
 import matplotlib.pyplot as plt
 import os
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--file-path", "-f", required=True,
-                    help="Path to the folder where the .tiff files are inside")
-
-parser.add_argument("--output-path", "-o", required=True, type=str,
-                    help="Path were processed images shall be saved to")
-
-parser.add_argument("--white-path", "-w", required=True, type=str,
-                    help="path of white detector reference .tiff file")
-
-parser.add_argument("--overwrite", "-owr", required=False, type=int, default=0,
-                    help="overwrite original files with new 0=True, 1=False \
-                    (default:0)")
-args = parser.parse_args()
-
-
 def ffc(img_ct, img_white):
     img_shape = np.array(img_ct).shape
 
@@ -46,6 +30,21 @@ def conv_attenuation(img):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file-path", "-f", required=True,
+                        help="Path to the folder where the .tiff files are inside")
+
+    parser.add_argument("--output-path", "-o", required=True, type=str,
+                        help="Path were processed images shall be saved to")
+
+    parser.add_argument("--white-path", "-w", required=True, type=str,
+                        help="path of white detector reference .tiff file")
+
+    parser.add_argument("--overwrite", "-owr", required=False, type=int, default=0,
+                        help="overwrite original files with new 0=True, 1=False \
+                        (default:0)")
+    args = parser.parse_args()
+
     for root, dirs, files in os.walk(args.file_path):
         img_white = np.array(tifffile.imread(args.white_path), dtype=np.float64)
         for name in sorted(files):
