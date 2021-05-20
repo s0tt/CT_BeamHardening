@@ -23,18 +23,21 @@ parser.add_argument("--output-absolute-path", "-o", required=True, type=str,
 
 parser.add_argument("--white-path", "-w", required=False, type=str,
                     help="path of white detector reference .tiff file")
+                    
+parser.add_argument("--dist-source-rot-axis", "-dsra", required=True, type=float, 
+                    help="distance between the source and the rotation axis of the object [m]")
+
 
 args = parser.parse_args()
 
 
 # default parameters of our CT-scan: 
 detector_pixel_size = 0.000127 # [m]
-distance_source_axis = 0.00363074699401855 # Source to Object-Stage (Center of rotation) [m]
 distance_source_detector = 1.229268# [m]
 
 
 def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
-                     distance_source_axis: float, distance_source_detector: float,
+                     distance_source_rot_axis: float, distance_source_detector: float,
                     dimension, image_paths, type_data): 
                      
    with h5py.File(file_name, "w") as f:
@@ -53,7 +56,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       dimension.attrs['MATLAB_int_decode'] = 2
       
 
-      f["DistanceSourceAxis"] = distance_source_axis
+      f["DistanceSourceAxis"] = distance_source_rot_axis
       f["DistanceSourceAxis"].attrs['MATLAB_class'] = 'double'
       f["DistanceSourceDetector"] = distance_source_detector
       f["DistanceSourceDetector"].attrs['MATLAB_class'] = 'double'
@@ -110,6 +113,6 @@ img_paths = get_image_list(args.tiff_files_path)
 
 
 hdf5_tiff_builder(args.output_absolute_path, detector_pixel_size,
-                   distance_source_axis, distance_source_detector, dimension_data,
+                   args.dist_source_rot_axis, distance_source_detector, dimension_data,
                    img_paths, type_data)
 
