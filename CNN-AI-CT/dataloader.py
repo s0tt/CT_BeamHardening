@@ -73,6 +73,9 @@ class VolumeDataset(Dataset):
                             y_index-2:y_index+3, 
                             z_index*self.stride: z_index*self.stride + self.num_pixel]
 
+        if idx == 20: 
+            print("test")
+
         if self.transform:
             sample_gt = self.transform(sample_gt)
             sample_bh = self.transform(sample_bh)
@@ -80,7 +83,7 @@ class VolumeDataset(Dataset):
         return [sample_bh, sample_gt]
 
 
-def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths):
+def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, shuffle=True):
     """
         @Args:
             volume_paths: list of tuples, where the first entry is the file path
@@ -93,7 +96,7 @@ def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths):
     train_loader = DataLoader(
                 ConcatDataset([VolumeDataset(path[0], path[1], num_pixel, stride) for path in volume_paths]),
                 batch_size=batch_size,
-                shuffle=True,
+                shuffle=shuffle,
                 num_workers=number_of_gpus,
                 pin_memory=True, # loads them directly in cuda pinned memory 
                 drop_last=True) # drop the last incomplete batch
