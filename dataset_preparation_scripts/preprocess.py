@@ -1,6 +1,6 @@
 import numpy as np
 import argparse
-from PIL import Image
+import tifffile
 import matplotlib.pyplot as plt
 import os
 
@@ -24,13 +24,13 @@ def ffc(img_ct, img_white):
     img_shape = np.array(img_ct).shape
 
     # take zeros as reference black image
-    black = np.zeros((img_shape))
+    black = np.zeros((img_shape), dtype=np.float64)
 
     # take reference white image from aRTist
-    white = np.array(img_white)
+    white = np.array(img_white, dtype=np.float64)
 
     # flat-field-correction (ffc)
-    img_new = ((np.array(img_ct) - black) / (white-black))
+    img_new = ((img_ct - black) / (white-black))
 
     # cut small values
     img_new = np.maximum((1/60000), img_new)
@@ -46,14 +46,15 @@ def conv_attenuation(img):
 
 
 for root, dirs, files in os.walk(args.file_path):
-    img_white = np.array(Image.open(args.white_path))
+    img_white = np.array(tifffile.imread(args.white_path), dtype=np.float64)
     for name in sorted(files):
-        img = np.array(Image.open(os.path.join(root, name)))
-        img_ffc = ffc(img, img_white)
-        img_att = conv_attenuation(img_ffc)
-        img_pil = Image.fromarray(img_att)
+        img = np.array(tifffile.imread(os.path.join(root, name)), dtype=np.float64)
+        img = ffc(img, img_white)
+        img = conv_attenuation(img)
 
         if args.overwrite == 1:
-            img_pil.save(os.path.join(root, name))
+            #img_pil.save(os.path.join(root, name))
+            tifffile.imsave(os.path.join(root, name), img, dtype=np.float64)
         else:
-            img_pil.save(os.path.join(args.output_path, name))
+            #img_pil.save(os.path.join(args.output_path, name))
+            tifffile.imsave(os.path.join(args.output_path, name), img, dtype=np.float64)
