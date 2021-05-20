@@ -20,11 +20,8 @@ class ConcatDataset(torch.utils.data.Dataset):
             else: 
                 i-= self.len_datasets[j]
 
-        #return tuple(d[i] for d in self.datasets) # second option return tuple
-
     def __len__(self):
         return sum([len(d) for d in self.datasets])
-        #return min(len(d) for d in self.datasets) # second option minimale size of a volume
 
 
 class VolumeDataset(Dataset):
@@ -74,6 +71,9 @@ class VolumeDataset(Dataset):
             sample_gt = volume_gt[x_index*self.stride: x_index*self.stride + self.num_pixel, 
                             y_index-2:y_index+3, 
                             z_index*self.stride: z_index*self.stride + self.num_pixel]
+
+        if idx == 20: 
+            print("test")
 
         if self.transform:
             sample_gt = self.transform(sample_gt)
@@ -154,7 +154,7 @@ class AsynchronLoader(DataLoader):
         self.prefetch()
         return self
 
-def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths):
+def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, shuffle=True):
     """
         @Args:
             volume_paths: list of tuples, where the first entry is the file path
@@ -162,15 +162,14 @@ def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths):
                         the .hdf5 file with the ground_truth volume. 
                         [(bh_path, gt_path), ...]
     """
-    
 
     train_loader = DataLoader(
                 ConcatDataset([VolumeDataset(path[0], path[1], num_pixel, stride) for path in volume_paths]),
                 batch_size=batch_size,
-                shuffle=True,
+                shuffle=shuffle,
                 num_workers=number_of_gpus,
                 pin_memory=True, # loads them directly in cuda pinned memory 
                 drop_last=True) # drop the last incomplete batch
-
+    
     return train_loader
 
