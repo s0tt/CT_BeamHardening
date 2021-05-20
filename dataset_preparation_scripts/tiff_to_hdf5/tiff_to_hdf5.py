@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image 
 import os 
 import argparse 
-
+from dataset_preparation_scripts.preprocessing.preprocess import ffc, conv_attenuation
 
 
 def validatePath(path):
@@ -18,6 +18,9 @@ parser.add_argument("--tiff-files-path", "-f", type=validatePath, required=True,
 
 parser.add_argument("--output-absolute-path", "-o", required=True, type=str, 
                     help="absolut path of the created hdf5 file eg C:/test/out.hdf5")
+
+parser.add_argument("--white-path", "-w", required=False, type=str,
+                    help="path of white detector reference .tiff file")
 
 args = parser.parse_args()
 
@@ -56,7 +59,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       image_dataset = None
       for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='uint16', chunks=True, maxshape=(None, None, None))
+            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=True, maxshape=(None, None, None))
          else:
             img_current = load_image_in_numpy_array(img_path)
             image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
@@ -69,9 +72,22 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
 
 def load_image_in_numpy_array(image_path): 
          try: 
-            return np.expand_dims(np.array(Image.open(image_path), dtype=np.float64), axis=0)
+            img = preprocess(np.array(Image.open(image_path), dtype=np.float64), axis=0)
+            return np.expand_dims(img)
          except: 
             raise Exception("image path not readable")
+
+
+def preprocess(img):
+   if args.white_path is not None:
+      img_white = np.array(Image.open(args.white_path), dtype=np.float64)
+      img = ffc(img, img_white)
+      img = conv_attenuation(img)
+      return img
+   else:
+      print("Warning: White file not provided, FFC&Attenuation transform not executed")
+      return img
+
 
 def get_image_list(image_dir):
    img_list = []
