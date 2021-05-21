@@ -81,17 +81,6 @@ class VolumeDataset(Dataset):
 
         return [sample_bh, sample_gt]
 
-
-def worker_fn(dataset, index_queue, output_queue):
-   while True:
-       try:
-           index = index_queue.get(timeout=0)
-       except multiprocessing.Queue.Empty:
-           continue
-       if index is None:
-           break
-       output_queue.put((index, dataset[index]))
-
 def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, shuffle=True):
     """
         @Args:
