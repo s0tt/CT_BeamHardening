@@ -1,4 +1,3 @@
-
 import h5py
 import numpy as np
 import argparse
@@ -66,7 +65,7 @@ def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
                 print("Normal == Transposed? ", np.all(slice_in == slice_out))
 
             print("----------------Overall times ----------------\n \
-                Normal: {} \t Transposed: {} \tDiff: {}".format(
+                Normal: {} \t- Transposed: {} \t=Diff: {}".format(
                     np.mean(in_times), np.mean(out_times), np.mean(diffs)))
             print("Improvement (wrt to normal): {}%".format((np.mean(diffs)
                     / np.mean(in_times)) * 100))
@@ -74,7 +73,7 @@ def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file-path-in", "-f", required=True, 
+    parser.add_argument("--file-path-in", "-f", required=True, type=str,
                         help="absolut path of input hdf5 file")
 
     parser.add_argument("--file-path-out", "-o", required=False, type=str, 
@@ -84,12 +83,11 @@ def main():
                         help="nr of y-slices to compare load times")
 
     args = parser.parse_args()
-
     f_out = trans_hdf5_incremental(args.file_path_in, args.file_path_out)
 
     if args.compare_nr_slices is not None:
         compare_hdf5(args.file_path_in, f_out, args.compare_nr_slices)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
