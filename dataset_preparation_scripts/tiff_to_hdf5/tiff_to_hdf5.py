@@ -64,22 +64,29 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       f["DistanceSourceDetector"].attrs['MATLAB_class'] = 'double'
 
       image_dataset = None
+      overall_border_vals = None
       for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=True, maxshape=(len(image_paths), 2304, 3200))
+            img = load_image_in_numpy_array(img_path)
+            if args.debug:
+               overall_border_vals = [np.amax(img), np.amin(img)]
+            image_dataset = f.create_dataset("Image", data=img, dtype='float64', chunks=True, maxshape=(len(image_paths), 2304, 3200))
          else:
             img_current = load_image_in_numpy_array(img_path)
             if args.debug:
-               print("Image:\t{}\tShape: {} \tMax: {}\t Min: {}".format(idx, img_current.shape, np.amax(img_current), np.amin(img_current)))
-
+               max_val = np.amax(img_current)
+               min_val = np.amin(img_current)
+               print("Image:\t{}\tShape: {} \tMax: {}\t Min: {}".format(idx, img_current.shape, max_val, min_val))
+               overall_border_vals[0] = max_val if max_val > overall_border_vals[0] else overall_border_vals[0]
+               overall_border_vals[1] = min_val if min_val < overall_border_vals[1] else overall_border_vals[1]
             image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
             image_dataset[idx, :, :] = img_current
       image_dataset.attrs['MATLAB_class'] = 'double'
-      if args.debug:
-         print("Image data finished:\tShape: {} \tMax: {}\t Min: {}".format(image_dataset.shape, np.amax(image_dataset), np.amin(image_dataset)))
       type_ = f.create_dataset("Type", data=type_data, dtype='uint16')
       type_.attrs['MATLAB_class'] = 'char'
       type_.attrs['MATLAB_int_decode'] = 2
+      if args.debug:
+         print("Image data finished:\tShape: {} \tMax: {}\t Min: {}".format(image_dataset.shape, overall_border_vals[0], overall_border_vals[1]))
 
 
 def load_image_in_numpy_array(image_path): 
