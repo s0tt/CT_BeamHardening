@@ -59,5 +59,5 @@ def main():
                 #img_pil.save(os.path.join(args.output_path, name))
                 tifffile.imsave(os.path.join(args.output_path, name), img, dtype=np.float64)
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
