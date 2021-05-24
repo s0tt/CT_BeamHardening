@@ -27,6 +27,8 @@ parser.add_argument("--white-path", "-w", required=False, type=str,
 parser.add_argument("--dist-source-rot-axis", "-dsra", required=True, type=float, 
                     help="distance between the source and the rotation axis of the object [m]")
 
+parser.add_argument("--debug", "-dbg", required=False, type=int, default=0,
+                    help="Debug mode, 0=Off 1=On")
 
 args = parser.parse_args()
 
@@ -64,12 +66,17 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
       image_dataset = None
       for idx, img_path in enumerate(image_paths):
          if image_dataset is None:
-            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=True, maxshape=(None, None, None))
+            image_dataset = f.create_dataset("Image", data=load_image_in_numpy_array(img_path), dtype='float64', chunks=True, maxshape=(len(image_paths), 2304, 3200))
          else:
             img_current = load_image_in_numpy_array(img_path)
+            if args.debug:
+               print("Image:\t{}\tShape: {} \tMax: {}\t Min: {}".format(idx, img_current.shape, np.amax(img_current), np.amin(img_current)))
+
             image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
             image_dataset[idx, :, :] = img_current
       image_dataset.attrs['MATLAB_class'] = 'double'
+      if args.debug:
+         print("Image data finished:\tShape: {} \tMax: {}\t Min: {}".format(image_dataset.shape, np.amax(image_dataset), np.amin(image_dataset)))
       type_ = f.create_dataset("Type", data=type_data, dtype='uint16')
       type_.attrs['MATLAB_class'] = 'char'
       type_.attrs['MATLAB_int_decode'] = 2
@@ -111,6 +118,9 @@ type_data = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 
 img_paths = get_image_list(args.tiff_files_path)
 
+if args.debug:
+   print("DBG Mode activated")
+   print("Image List loaded, Length:", str(len(img_paths)))
 
 hdf5_tiff_builder(args.output_absolute_path, detector_pixel_size,
                    args.dist_source_rot_axis, distance_source_detector, dimension_data,
