@@ -69,6 +69,7 @@ def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
                     np.mean(in_times), np.mean(out_times), np.mean(diffs)))
             print("Improvement (wrt to normal): {}%".format((np.mean(diffs)
                     / np.mean(in_times)) * 100))
+    return np.array([np.mean(in_times), np.mean(out_times), np.mean(diffs)])
 
 
 def main():
@@ -79,14 +80,29 @@ def main():
     parser.add_argument("--file-path-out", "-o", required=False, type=str, 
                         help="absolut path of output hdf5 file")
 
-    parser.add_argument("--compare-nr-slices", "-c", required=False, type=int,
+    parser.add_argument("--compare-nr-slices", "-s", required=False, type=int,
                         help="nr of y-slices to compare load times")
+    parser.add_argument("--compare-cycles", "-c", required=False, type=int,
+                        help="nr of cycles")
 
     args = parser.parse_args()
     f_out = trans_hdf5_incremental(args.file_path_in, args.file_path_out)
 
-    if args.compare_nr_slices is not None:
-        compare_hdf5(args.file_path_in, f_out, args.compare_nr_slices)
+    if args.compare_cycles is not None:
+        if args.compare_nr_slices is None:
+            args.compare_nr_slices = 20
+
+        overall_data = np.array([0, 0, 0], dtype=float)
+        for cyc in range(args.compare_cycles):
+            res = compare_hdf5(args.file_path_in, f_out, args.compare_nr_slices)
+            overall_data += int(args.compare_cycles) * res
+
+        print("----------------Overall over all cycles ----------------\n \
+                Normal: {} \t- Transposed: {} \t=Diff: {}".format(
+                overall_data[0], overall_data[1], overall_data[2]))               
+
+        print("Improvement (wrt to normal): {}%".format((overall_data[2]
+                / overall_data[0]) * 100))
 
 
 if __name__ == "__main__":
