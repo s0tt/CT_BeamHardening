@@ -99,7 +99,7 @@ def main():
         for cyc in range(args.compare_cycles):
             res = compare_hdf5(args.file_path_in, args.file_path_compare,
                                 args.compare_nr_slices)
-            overall_data += int(args.compare_cycles) * res
+            overall_data += (1/int(args.compare_cycles)) * res
 
         print("----------------Overall over all cycles ----------------\n \
                 Normal: {} \t- Transposed: {} \t=Diff: {}".format(
