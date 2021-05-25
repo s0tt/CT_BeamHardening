@@ -37,7 +37,6 @@ def trans_hdf5_incremental(path_in: str, path_out):
                         vol_data_3d.shape[0], axis=0)
                     new_volume_dataset[y_slice, :, :] = vol_data_3d
             new_volume_dataset.attrs['MATLAB_class'] = 'double'
-    return name_new
 
 
 def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
@@ -80,21 +79,26 @@ def main():
     parser.add_argument("--file-path-out", "-o", required=False, type=str, 
                         help="absolut path of output hdf5 file")
 
+    parser.add_argument("--file-path-compare", "-fc", required=False, type=str, 
+                        help="absolut path of hdf5 file for comparison")
+
     parser.add_argument("--compare-nr-slices", "-s", required=False, type=int,
                         help="nr of y-slices to compare load times")
     parser.add_argument("--compare-cycles", "-c", required=False, type=int,
                         help="nr of cycles")
 
     args = parser.parse_args()
-    f_out = trans_hdf5_incremental(args.file_path_in, args.file_path_out)
+    if args.file_path_compare is None:
+        trans_hdf5_incremental(args.file_path_in, args.file_path_out)
 
-    if args.compare_cycles is not None:
+    elif args.compare_cycles is not None:
         if args.compare_nr_slices is None:
             args.compare_nr_slices = 20
 
         overall_data = np.array([0, 0, 0], dtype=float)
         for cyc in range(args.compare_cycles):
-            res = compare_hdf5(args.file_path_in, f_out, args.compare_nr_slices)
+            res = compare_hdf5(args.file_path_in, args.file_path_compare,
+                                args.compare_nr_slices)
             overall_data += int(args.compare_cycles) * res
 
         print("----------------Overall over all cycles ----------------\n \
