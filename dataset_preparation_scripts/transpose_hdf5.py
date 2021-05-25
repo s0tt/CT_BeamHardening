@@ -41,11 +41,24 @@ def trans_hdf5_incremental(path_in: str, path_out):
 
 def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
     # open files and set cache to zero for better comparison
-    with h5py.File(f_hdf5_normal, "r", rdcc_nbytes=0) as f_in: 
+    t_before_open_in = time.process_time()
+    with h5py.File(f_hdf5_normal, "r", rdcc_nbytes=0) as f_in:
+        t_after_open_in = time.process_time()
         with h5py.File(f_hdf5_transposed, "r", rdcc_nbytes=0) as f_out:
+            t_after_open_out = time.process_time()
             vol_in = f_in["Volume"]
+            t_after_vol_in = time.process_time()
             vol_out = f_out["Volume"]
+            t_after_vol_out = time.process_time()
             in_times, out_times, diffs = [], [], []
+            print("File open\t| Normal: {} \t Transposed: {} \tDiff: {}".format(
+                t_after_open_in - t_before_open_in, t_after_open_out - t_after_open_in,
+                (t_after_open_in - t_before_open_in) - (t_after_open_out - t_after_open_in)
+                ))
+            print("Volume access\t| Normal: {} \t Transposed: {} \tDiff: {}\n".format(
+                t_after_vol_in - t_after_open_out, t_after_vol_out - t_after_vol_in,
+                (t_after_vol_in - t_after_open_out) - (t_after_vol_out - t_after_vol_in)
+                ))
             for y_slice in range(nr_slices):
                 t_before_in = time.process_time()
                 slice_in = vol_in[:, y_slice, :]
@@ -57,7 +70,8 @@ def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
                 out_times.append(t_after_out - t_before_out)
                 diffs.append((t_after_in - t_before_in) -
                     (t_after_out - t_before_out))
-                print("Normal: {} \t Transposed: {} \tDiff: {}".format(
+                print("Slice {}\t| Normal: {} \t Transposed: {} \tDiff: {}".format(
+                        y_slice,
                         t_after_in - t_before_in, t_after_out-t_before_out,
                         (t_after_in - t_before_in) - (t_after_out-t_before_out)
                         ))
