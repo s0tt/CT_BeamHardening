@@ -1,10 +1,8 @@
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-import multiprocessing
-import itertools
 import h5py
-import queue
+
 
 class ConcatDataset(torch.utils.data.Dataset):
     def __init__(self, datasets):
@@ -25,7 +23,7 @@ class ConcatDataset(torch.utils.data.Dataset):
 
 
 class VolumeDataset(Dataset):
-    """Dataset for a single Volume"""
+    """Dataset for a single Volume v2, adapted that rotation axis is in the first dimension"""
 
     def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, transform=None):
         """
@@ -46,34 +44,31 @@ class VolumeDataset(Dataset):
         with h5py.File(self.file_path_bh, 'r') as h5f:
             self.x, self.y, self.z = h5f['Volume'].shape
 
-        self.num_samples_in_x = int((self.x-self.num_pixel)/self.stride) + 1
+        self.num_samples_in_y = int((self.y-self.num_pixel)/self.stride) + 1
         self.num_samples_in_z = int((self.z-self.num_pixel)/self.stride) + 1
 
-        self.num_samples_per_slice = self.num_samples_in_z*self.num_samples_in_x  
+        self.num_samples_per_slice = self.num_samples_in_y*self.num_samples_in_z
 
     def __len__(self):
-        return self.num_samples_per_slice*(self.y - 4)
+        return self.num_samples_per_slice*(self.x - 4)
 
     def __getitem__(self, idx):
-        y_index = int((idx)/self.num_samples_per_slice) + 2
+        x_index = int((idx)/self.num_samples_per_slice) + 2
         overlay =  idx % self.num_samples_per_slice
-        z_index = int(overlay/self.num_samples_in_x)
-        x_index = overlay % self.num_samples_in_x
+        z_index = int(overlay/self.num_samples_in_y)
+        y_index = overlay % self.num_samples_in_y
 
         with h5py.File(self.file_path_bh, 'r') as h5f:
             volume_bh = h5f['Volume']
-            sample_bh = volume_bh[x_index*self.stride: x_index*self.stride + self.num_pixel, 
-                            y_index-2:y_index+3, 
+            sample_bh = volume_bh[x_index-2:x_index+3,
+                            y_index*self.stride: y_index*self.stride + self.num_pixel,
                             z_index*self.stride: z_index*self.stride + self.num_pixel]
 
         with h5py.File(self.file_path_gt, 'r') as h5f:
             volume_gt = h5f['Volume']
-            sample_gt = volume_gt[x_index*self.stride: x_index*self.stride + self.num_pixel, 
-                            y_index-2:y_index+3, 
+            sample_gt = volume_gt[x_index-2:x_index+3,
+                            y_index*self.stride: y_index*self.stride + self.num_pixel,
                             z_index*self.stride: z_index*self.stride + self.num_pixel]
-
-        if idx == 20: 
-            print("test")
 
         if self.transform:
             sample_gt = self.transform(sample_gt)
