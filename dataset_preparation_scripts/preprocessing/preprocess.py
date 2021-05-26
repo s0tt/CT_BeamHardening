@@ -4,14 +4,17 @@ import tifffile
 import matplotlib.pyplot as plt
 import os
 
+DATATYPE_PYTHON = "float32"
+DATATYPE_NUMPY = np.float32
+
 def ffc(img_ct, img_white):
     img_shape = np.array(img_ct).shape
 
     # take zeros as reference black image
-    black = np.zeros((img_shape), dtype=np.float64)
+    black = np.zeros((img_shape), dtype=DATATYPE_NUMPY)
 
     # take reference white image from aRTist
-    white = np.array(img_white, dtype=np.float64)
+    white = np.array(img_white, dtype=DATATYPE_NUMPY)
 
     # flat-field-correction (ffc)
     img_new = ((img_ct - black) / (white-black))
@@ -46,18 +49,18 @@ def main():
     args = parser.parse_args()
 
     for root, dirs, files in os.walk(args.file_path):
-        img_white = np.array(tifffile.imread(args.white_path), dtype=np.float64)
+        img_white = np.array(tifffile.imread(args.white_path), dtype=DATATYPE_NUMPY)
         for name in sorted(files):
-            img = np.array(tifffile.imread(os.path.join(root, name)), dtype=np.float64)
+            img = np.array(tifffile.imread(os.path.join(root, name)), dtype=DATATYPE_NUMPY)
             img = ffc(img, img_white)
             img = conv_attenuation(img)
 
             if args.overwrite == 1:
                 #img_pil.save(os.path.join(root, name))
-                tifffile.imsave(os.path.join(root, name), img, dtype=np.float64)
+                tifffile.imsave(os.path.join(root, name), img, dtype=DATATYPE_NUMPY)
             else:
                 #img_pil.save(os.path.join(args.output_path, name))
-                tifffile.imsave(os.path.join(args.output_path, name), img, dtype=np.float64)
+                tifffile.imsave(os.path.join(args.output_path, name), img, dtype=DATATYPE_NUMPY)
 
 if __name__ == "__main__":
     main()

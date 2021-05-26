@@ -8,6 +8,8 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.."))
 from dataset_preparation_scripts.preprocessing.preprocess import ffc, conv_attenuation
 
+DATATYPE_PYTHON = "float32"
+DATATYPE_NUMPY = np.float32
 
 def validatePath(path):
    if os.path.exists(path):
@@ -70,7 +72,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
             img = load_image_in_numpy_array(img_path)
             if args.debug:
                overall_border_vals = [np.amax(img), np.amin(img)]
-            image_dataset = f.create_dataset("Image", data=img, dtype='float64', chunks=True, maxshape=(len(image_paths), 2304, 3200))
+            image_dataset = f.create_dataset("Image", data=img, dtype=DATATYPE_PYTHON, chunks=True, maxshape=(len(image_paths), 2304, 3200))
          else:
             img_current = load_image_in_numpy_array(img_path)
             if args.debug:
@@ -92,7 +94,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
 def load_image_in_numpy_array(image_path): 
          try: 
             img = Image.open(image_path)
-            img = preprocess(np.array(img, dtype=np.float64))
+            img = preprocess(np.array(img, dtype=DATATYPE_NUMPY))
             return np.expand_dims(img, axis=0)
          except: 
             raise Exception("image path not readable")
@@ -100,7 +102,7 @@ def load_image_in_numpy_array(image_path):
 
 def preprocess(img):
    if args.white_path is not None:
-      img_white = np.array(Image.open(args.white_path), dtype=np.float64)
+      img_white = np.array(Image.open(args.white_path), dtype=DATATYPE_NUMPY)
       img = ffc(img, img_white)
       img = conv_attenuation(img)
       return img

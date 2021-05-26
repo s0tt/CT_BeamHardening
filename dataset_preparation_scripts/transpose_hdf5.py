@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import time
 
+DATATYPE_USED = "float32"
 
 def trans_hdf5_incremental(path_in: str, path_out):
     with h5py.File(path_in, "r") as f_in:
@@ -30,7 +31,7 @@ def trans_hdf5_incremental(path_in: str, path_out):
                 vol_data_3d = np.expand_dims(vol_data, axis=0)
                 if new_volume_dataset is None:
                     new_volume_dataset = f_out.create_dataset("Volume",
-                        data=vol_data_3d, dtype='float64', chunks=True,
+                        data=vol_data_3d, dtype=DATATYPE_USED, chunks=True,
                         maxshape=(None, None, None))
                 else:
                     new_volume_dataset.resize(new_volume_dataset.shape[0] +
