@@ -84,7 +84,7 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         loss = F.mse_loss(y, x_2-y_hat)
 
-        self.log('train_loss', loss)
+        self.logger.experiment.add_scalar('train_loss', loss)
         return loss
 
     def configure_optimizers(self):
