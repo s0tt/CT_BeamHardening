@@ -76,7 +76,7 @@ class VolumeDataset(Dataset):
 
         return [sample_bh, sample_gt]
 
-def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, shuffle=True):
+def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, sampler=None,shuffle=True):
     """
         @Args:
             volume_paths: list of tuples, where the first entry is the file path
@@ -93,7 +93,8 @@ def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, 
                 pin_memory=True, # loads them directly in cuda pinned memory 
                 drop_last=True,# drop the last incomplete batch
                 prefetch_factor=2,# num of (2 * num_workers) samples prefetched
-                persistent_workers=False # keep workers persistent after dataset loaded once
+                persistent_workers=False, # keep workers persistent after dataset loaded once
+                sampler=sampler # sampler to pass in different indices
                 ) 
     return train_loader
 
