@@ -77,7 +77,13 @@ class CNN_AICT(pl.LightningModule):
         # It is independent of forward
         x, y = batch
         y_hat = self(x)
-        loss = F.mse_loss(y, y_hat)
+
+        # get input image without neighbour slices
+        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+
+        # calculate loss from ground-trouth with input image - predicted residual artifact
+        loss = F.mse_loss(y, x_2-y_hat)
+
         self.log('train_loss', loss)
         return loss
 
