@@ -43,46 +43,7 @@ def trans_hdf5_incremental(path_in: str, path_out: str):
             
             new_volume_dataset.attrs['MATLAB_class'] = 'double'
             new_volume_dataset.attrs['Mean_grey_value'] = grey_value_sum/vol_hdf5.size
-
-def remove_slices_with_to_much_air(path_in: str): 
-    with h5py.File(path_in, "r") as f_in:
-        if path_out is not None:
-            name_new = path_out
-        else:
-            name_old = path_in.split(".hdf5")[0]
-            name_new = name_old+"_transposed.hdf5"
-        with h5py.File(name_new, "w") as f_out:
-            new_volume_dataset = None
-            image_dataset.resize(image_dataset.shape[0]+img_current.shape[0], axis=0)
             
-            # takeover all other existing groups beside "Volume"
-            for key in f_in.keys():
-                if key != "Volume":
-                    # Get parent group name for copy
-                    group_path = f_in[key].parent.name
-                    # Check existence of group, else create group+parent
-                    group_id = f_out.require_group(group_path)
-                    f_in.copy(key, group_id, group_path+key)
-            
-            vol_hdf5 = f_in["Volume"]
-            # Volume iteration loop
-            grey_value_sum = 0
-            for y_slice in range(vol_hdf5.shape[1]):
-                vol_data = vol_hdf5[:, y_slice, :]
-                grey_value_sum += vol_data.flatten().sum()
-
-                vol_data_3d = np.expand_dims(vol_data, axis=0)
-                if new_volume_dataset is None:
-                    new_volume_dataset = f_out.create_dataset("Volume",
-                        data=vol_data_3d, dtype=DATATYPE_USED, chunks=True,
-                        maxshape=(None, None, None))
-                else:
-                    new_volume_dataset.resize(new_volume_dataset.shape[0] +
-                        vol_data_3d.shape[0], axis=0)
-                    new_volume_dataset[y_slice, :, :] = vol_data_3d
-            
-            new_volume_dataset.attrs['MATLAB_class'] = 'double'
-            new_volume_dataset.attrs['Mean_grey_value'] = grey_value_sum/vol_hdf5.size
 
 def compare_hdf5(f_hdf5_normal, f_hdf5_transposed, nr_slices=20):
     # open files and set cache to zero for better comparison
