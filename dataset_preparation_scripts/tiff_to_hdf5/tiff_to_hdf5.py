@@ -46,7 +46,7 @@ def hdf5_tiff_builder(file_name: str,  detector_pixel_size: float,
                      
    with h5py.File(file_name, "w") as f:
       # angles are in rad. start at 0 and go to shortly before 6.28 .. (2*pi)
-      angle_rad = np.linspace(0, 2*np.pi, len(image_paths), endpoint=False, dtype=np.float64) 
+      angle_rad = -1*np.arange(0, 2*np.pi, (2*np.pi)/5300, dtype=np.float64)
       angle = f.create_dataset("Angle", data=angle_rad, dtype='float64')
       angle.attrs['MATLAB_class'] = 'double'
       f["DetectorPixelSizeX"] = detector_pixel_size
