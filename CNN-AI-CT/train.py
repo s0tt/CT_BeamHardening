@@ -11,6 +11,7 @@ from pytorch_lightning.accelerators import accelerator
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import get_dataloader
+from dataloader import CtVolumeData
 
 
 def main():
@@ -43,13 +44,13 @@ def main():
     tb_logger = TensorBoardLogger('logs/')
 
     # init checkpoints
-    # val_loss_callback = ModelCheckpoint(
-    #     monitor='val_loss',
-    #     dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
-    #     filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
-    #     save_top_k=3,
-    #     mode='min',
-    # )
+    val_loss_callback = ModelCheckpoint(
+        monitor='val_loss',
+        dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
+        filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
+        save_top_k=3,
+        mode='min',
+    )
 
     train_loss_callback = ModelCheckpoint(
         monitor='train_loss',
@@ -58,22 +59,6 @@ def main():
         save_top_k=3,
         mode='min',
     )
-
-    # Creating data indices for training and test splits
-    loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
-                                dataset_paths, shuffle=False)
-    dataset_size = loader.dataset.len_datasets[0]
-    indices = list(range(dataset_size))
-    split = int(np.round(test_split * dataset_size))
-    np.random.shuffle(indices)
-    train_indices, test_indices = indices[split:], indices[:split]
-
-    train_sampler = SubsetRandomSampler(train_indices)
-    test_sampler = SubsetRandomSampler(test_indices)
-
-    # get dataloader for CT input and ground-truth slices in Y-dimension
-    train_loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, dataset_paths, 
-                                    sampler=train_sampler, shuffle=False)
 
 
     # init model
@@ -86,14 +71,18 @@ def main():
         num_nodes=number_of_nodes, 
         logger=tb_logger, 
         accelerator=accelerator_type,
-        callbacks=[train_loss_callback] #[val_loss_callback, train_loss_callback]
+        callbacks=[train_loss_callback, val_loss_callback]
         )
-    trainer.fit(cnn, train_loader)
+
+    # TODO: Add Command Line Interface (CLI)
+    #cli = LightningCLI(LitClassifier, MNISTDataModule, seed_everything_default=1234)
+    #result = cli.trainer.test(cli.model, datamodule=cli.datamodule)
+
+    ct_volumes = CtVolumeData(paths= dataset_paths)
+    trainer.fit(cnn, datamodule=ct_volumes)
 
     # test model
-    test_loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
-                                    dataset_paths, sampler=test_sampler, shuffle=False)
-    trainer.test(test_dataloaders=test_loader)
+    trainer.test(datamodule=CtVolumeData)
 
 if __name__ == "__main__":
     main()
