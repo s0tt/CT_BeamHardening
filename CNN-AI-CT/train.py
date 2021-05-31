@@ -1,12 +1,13 @@
 
 import numpy as np
 import argparse
-from pytorch_lightning.accelerators import accelerator
-
 import torch
 from torch.utils.data.sampler import SubsetRandomSampler
+
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.accelerators import accelerator
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import get_dataloader
@@ -41,6 +42,23 @@ def main():
     # initialize tesnorboard logger
     tb_logger = TensorBoardLogger('logs/')
 
+    # init checkpoints
+    # val_loss_callback = ModelCheckpoint(
+    #     monitor='val_loss',
+    #     dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
+    #     filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
+    #     save_top_k=3,
+    #     mode='min',
+    # )
+
+    train_loss_callback = ModelCheckpoint(
+        monitor='train_loss',
+        dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
+        filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
+        save_top_k=3,
+        mode='min',
+    )
+
     # Creating data indices for training and test splits
     loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
                                 dataset_paths, shuffle=False)
@@ -63,8 +81,13 @@ def main():
     cnn.to(device)
 
     # train model
-    trainer = pl.Trainer(gpus=number_of_gpus, num_nodes=number_of_nodes, 
-                            logger=tb_logger, accelerator=accelerator_type)
+    trainer = pl.Trainer(
+        gpus=number_of_gpus, 
+        num_nodes=number_of_nodes, 
+        logger=tb_logger, 
+        accelerator=accelerator_type,
+        callbacks=[train_loss_callback] #[val_loss_callback, train_loss_callback]
+        )
     trainer.fit(cnn, train_loader)
 
     # test model
