@@ -87,6 +87,38 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_scalar('train_loss', loss)
         return loss
 
+    def validation_step(self, batch, batch_idx):
+        # training_step defined the train loop.
+        # It is independent of forward
+        x, y = batch
+        y_hat = self(x)
+
+        # get input image without neighbour slices
+        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+
+        # calculate loss from ground-trouth with input image - predicted residual artifact
+        loss = F.mse_loss(y, x_2-y_hat)
+
+        self.logger.experiment.add_scalar('val_loss', loss)
+        #TODO: Add validation accuracy 
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        # training_step defined the train loop.
+        # It is independent of forward
+        x, y = batch
+        y_hat = self(x)
+
+        # get input image without neighbour slices
+        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+
+        # calculate loss from ground-trouth with input image - predicted residual artifact
+        loss = F.mse_loss(y, x_2-y_hat)
+
+        self.logger.experiment.add_scalar('test_loss', loss)
+        #TODO: Add test accuracy 
+        return loss
+        
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, betas=(0.9, 0.999))
         return optimizer
