@@ -120,10 +120,10 @@ class CtVolumeData(pl.LightningDataModule):
 
         loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
                                 paths, shuffle=False)
-        dataset_size = loader.dataset.len_datasets[0]
-        indices = list(range(dataset_size))
-        split_test = int(np.round(test_split * dataset_size))
-        split_val = int(np.round(val_split * dataset_size))
+        self.dataset_size = np.sum(loader.dataset.len_datasets)
+        indices = list(range(self.dataset_size))
+        split_test = int(np.round(test_split * self.dataset_size))
+        split_val = int(np.round(val_split * self.dataset_size))
         np.random.shuffle(indices)
         test_indices = indices[:split_test]
         val_indices = indices[split_test:split_test+split_val]
@@ -132,6 +132,7 @@ class CtVolumeData(pl.LightningDataModule):
         self.train_sampler = SubsetRandomSampler(train_indices)
         self.test_sampler = SubsetRandomSampler(test_indices)
         self.val_sampler = SubsetRandomSampler(val_indices)
+        print("Indices:\n Train {}:\nTest {}:\nVal {}:\n".format(train_indices, test_indices, val_indices))
 
     def train_dataloader(self):
         return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
