@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-
+from visualization import make_grid
 class CNN_AICT(pl.LightningModule):
 
     def __init__(self):
@@ -72,6 +72,11 @@ class CNN_AICT(pl.LightningModule):
         out3 = self.endLayer(out2)
         return out3
 
+    def on_train_start(self) -> None:
+        sampleImg=torch.rand((1,5,256,256)) #sample image for graph
+        self.logger.experiment.add_graph(CNN_AICT(),sampleImg)
+        return super().on_train_start()
+
     def training_step(self, batch, batch_idx):
         # training_step defined the train loop.
         # It is independent of forward
@@ -119,6 +124,34 @@ class CNN_AICT(pl.LightningModule):
         #TODO: Add test accuracy 
         return loss
         
+
+    def show_activations(self, x):
+
+        # logging reference image       
+        self.logger.experiment.add_image("input",torch.Tensor.cpu(x[0][0]),self.current_epoch,dataformats="HW")
+
+        # logging layer 1 activations       
+
+        out = self.startLayer(x)
+
+        c=self.makegrid(out,4)
+
+        self.logger.experiment.add_image("startLayer:",c,self.current_epoch,dataformats="HW")
+
+        # logging middle layer activations     
+        out = self.middleLayer(out)
+        c=self.makegrid(out,8)
+        self.logger.experiment.add_image("middleLayer:",c,self.current_epoch,dataformats="HW")
+
+        # logging end layer activations    
+        out = self.endLayer(out)
+        c=self.makegrid(out,8)
+        self.logger.experiment.add_image("endLayer:",c,self.current_epoch,dataformats="HW")
+
+    def training_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
+
+        return super().training_epoch_end(outputs)
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, betas=(0.9, 0.999))
         return optimizer
