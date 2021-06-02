@@ -87,7 +87,7 @@ def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_path
                         [(bh_path, gt_path), ...]
     """
 
-    train_loader = DataLoader(
+    loader = DataLoader(
                 ConcatDataset([VolumeDataset(path[0], path[1], num_pixel, stride) for path in volume_paths]),
                 batch_size=batch_size,
                 shuffle=shuffle,
@@ -98,7 +98,7 @@ def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_path
                 persistent_workers=False, # keep workers persistent after dataset loaded once
                 sampler=sampler # sampler to pass in different indices
                 ) 
-    return train_loader
+    return loader
 
 class CtVolumeData(pl.LightningDataModule):
     def __init__(
