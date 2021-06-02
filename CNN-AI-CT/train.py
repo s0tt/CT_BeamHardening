@@ -64,11 +64,6 @@ def main():
         mode='min',
     )
 
-
-    # init model
-    cnn = CNN_AICT()
-    cnn.to(device)
-
     # train model
     trainer = pl.Trainer(
         gpus=number_of_gpus, 
@@ -83,6 +78,12 @@ def main():
     #result = cli.trainer.test(cli.model, datamodule=cli.datamodule)
 
     ct_volumes = CtVolumeData(paths= dataset_paths)
+
+    # init model
+    ref_img, ref_label = next(iter(ct_volumes.test_dataloader()))
+    cnn = CNN_AICT(ref_img=ref_img)
+    cnn.to(device)
+    
     trainer.fit(cnn, datamodule=ct_volumes)
 
     # test model

@@ -5,8 +5,9 @@ import pytorch_lightning as pl
 from visualization import make_grid
 class CNN_AICT(pl.LightningModule):
 
-    def __init__(self):
+    def __init__(self, ref_img=None):
         super().__init__()
+        self.ref_img = ref_img
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
             nn.ReLU()
@@ -124,32 +125,29 @@ class CNN_AICT(pl.LightningModule):
         #TODO: Add test accuracy 
         return loss
         
-
     def show_activations(self, x):
+        if x is not None:
+            # logging reference input image       
+            self.logger.experiment.add_image("input",torch.Tensor.cpu(x[0][2]),self.current_epoch,dataformats="HW")
 
-        # logging reference image       
-        self.logger.experiment.add_image("input",torch.Tensor.cpu(x[0][0]),self.current_epoch,dataformats="HW")
+            # logging start layer activations       
+            out = self.startLayer(x)
+            grid = make_grid(out,8)
 
-        # logging layer 1 activations       
+            self.logger.experiment.add_image("startLayer", grid, self.current_epoch,dataformats="HW")
 
-        out = self.startLayer(x)
+            # logging middle layer activations     
+            out = self.middleLayer(out)
+            grid = make_grid(out,8)
+            self.logger.experiment.add_image("middleLayer", grid, self.current_epoch,dataformats="HW")
 
-        c=self.makegrid(out,4)
+            # logging end layer activations    
+            out = self.endLayer(out)
+            grid = make_grid(out,1)
+            self.logger.experiment.add_image("endLayer", grid, self.current_epoch,dataformats="HW")
 
-        self.logger.experiment.add_image("startLayer:",c,self.current_epoch,dataformats="HW")
-
-        # logging middle layer activations     
-        out = self.middleLayer(out)
-        c=self.makegrid(out,8)
-        self.logger.experiment.add_image("middleLayer:",c,self.current_epoch,dataformats="HW")
-
-        # logging end layer activations    
-        out = self.endLayer(out)
-        c=self.makegrid(out,8)
-        self.logger.experiment.add_image("endLayer:",c,self.current_epoch,dataformats="HW")
-
-    def training_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-
+    def training_epoch_end(self, outputs) -> None:
+        self.show_activations(self.ref_img)
         return super().training_epoch_end(outputs)
 
     def configure_optimizers(self):
