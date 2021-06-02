@@ -32,7 +32,11 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     number_of_nodes = args.nr_nodes # number of GPU nodes for distributed training.
     number_of_gpus = args.nr_gpus # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
-    accelerator_type = "ddp" # TODO: 'dp' is DataParallel (split batch among GPUs of same machine)
+    
+    # Accelerator
+    # 'ddp': multiple-gpus across many machines (python script based))
+    # 'dp' : is DataParallel (split batch among GPUs of same machine)
+    accelerator_type = "dp"
     num_workers = args.nr_workers
     batch_size = 16
     dataset_stride = 128 
