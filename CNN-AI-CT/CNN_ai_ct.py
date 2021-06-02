@@ -90,7 +90,7 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         loss = F.mse_loss(y, x_2-y_hat)
 
-        self.logger.experiment.add_scalar('train_loss', loss)
+        self.logger.experiment.add_scalar('train_loss', loss, self.current_epoch)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -105,7 +105,7 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         loss = F.mse_loss(y, x_2-y_hat)
 
-        self.logger.experiment.add_scalar('val_loss', loss)
+        self.logger.experiment.add_scalar('val_loss', loss, self.current_epoch)
         #TODO: Add validation accuracy 
         return loss
 
