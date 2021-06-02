@@ -31,16 +31,16 @@ def main():
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
     accelerator_type = args.accelerator
-    num_workers = args.nr_workers
+    num_workers = int(args.nr_workers) if args.nr_workers != None else None
     batch_size = 16
     dataset_stride = 128 
     num_pixel = 256 
     test_split = 0.3
     val_split = 0.2
     dataset_paths = [(args.file_in, args.file_gt)] 
-    number_of_nodes = args.num_nodes # number of GPU nodes for distributed training.
-    number_of_gpus = args.gpus # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
-    max_epochs = args.max_epochs # max number of epochs
+    number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
+    number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
+    max_epochs = int(args.max_epochs) if args.max_epochs != None else None# max number of epochs
 
     # initialize tesnorboard logger
     tb_logger = TensorBoardLogger('logs/')
