@@ -2,6 +2,7 @@
 import numpy as np
 import argparse
 import torch
+import os
 from torch.utils.data.sampler import SubsetRandomSampler
 
 import pytorch_lightning as pl
@@ -22,6 +23,8 @@ def main():
                         help="Path to input volume ground truth file")
     parser.add_argument("--nr_workers", "-w", required=False, default=2,
                         help="number of worker subproccesses to prefetch")
+    parser.add_argument("--dir", "-d", required=False, default="",
+                        help="directory where training artefacts are saved")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -43,12 +46,13 @@ def main():
     max_epochs = int(args.max_epochs) if args.max_epochs != None else None# max number of epochs
 
     # initialize tesnorboard logger
-    tb_logger = TensorBoardLogger('logs/')
+    path_log = os.path.join(args.dir, "logs")
+    tb_logger = TensorBoardLogger(path_log)
 
     # init checkpoints
     val_loss_callback = ModelCheckpoint(
         monitor='val_loss',
-        dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
+        dirpath=path_log,
         filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
         save_top_k=3,
         mode='min',
@@ -56,7 +60,7 @@ def main():
 
     train_loss_callback = ModelCheckpoint(
         monitor='train_loss',
-        dirpath='/net/pasnas01/pool1/enpro-2021-voxie/training/cnn_ai_ct',
+        dirpath=path_log,
         filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
         save_top_k=3,
         mode='min',
@@ -88,7 +92,7 @@ def main():
     # init model
     ref_img, ref_label = next(iter(ct_volumes.test_dataloader()))
     cnn = CNN_AICT(ref_img=ref_img)
-    cnn.to(device)
+    #cnn.to(device)
     
     trainer.fit(cnn, datamodule=ct_volumes)
 
