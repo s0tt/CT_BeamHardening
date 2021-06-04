@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torchmetrics.regression import PSNR, MeanAbsoluteError
 from visualization import make_grid
 class CNN_AICT(pl.LightningModule):
 
@@ -86,11 +87,21 @@ class CNN_AICT(pl.LightningModule):
 
         # get input image without neighbour slices
         x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         # calculate loss from ground-trouth with input image - predicted residual artifact
-        loss = F.mse_loss(y, x_2-y_hat)
+        residual = x_2-y_hat
+        loss = F.mse_loss(residual, y_2)
+        psnr_err = PSNR()
+        psnr = psnr_err(residual, y_2)
+        mean_abs_err = MeanAbsoluteError()
+        mae = mean_abs_err(residual, y_2)
 
-        self.logger.experiment.add_scalar('train_loss', loss, self.current_epoch)
+        self.log_dict({
+            'train_loss': loss,
+            'psnr': psnr,
+            'mean_abs_err': mae
+        })
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -101,12 +112,22 @@ class CNN_AICT(pl.LightningModule):
 
         # get input image without neighbour slices
         x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         # calculate loss from ground-trouth with input image - predicted residual artifact
-        loss = F.mse_loss(y, x_2-y_hat)
+        residual = x_2-y_hat
+        loss = F.mse_loss(residual, y_2)
+        psnr_err = PSNR()
+        psnr = psnr_err(residual, y_2)
+        mean_abs_err = MeanAbsoluteError()
+        mae = mean_abs_err(residual, y_2)
 
-        self.logger.experiment.add_scalar('val_loss', loss, self.current_epoch)
-        #TODO: Add validation accuracy 
+        self.log_dict({
+            'val_loss': loss,
+            'psnr': psnr,
+            'mean_abs_err': mae
+        })
+
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -117,12 +138,22 @@ class CNN_AICT(pl.LightningModule):
 
         # get input image without neighbour slices
         x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         # calculate loss from ground-trouth with input image - predicted residual artifact
-        loss = F.mse_loss(y, x_2-y_hat)
+        residual = x_2-y_hat
+        loss = F.mse_loss(residual, y_2)
+        acc = 0
+        psnr_err = PSNR()
+        psnr = psnr_err(residual, y_2)
+        mean_abs_err = MeanAbsoluteError()
+        mae = mean_abs_err(residual, y_2)
 
-        self.logger.experiment.add_scalar('test_loss', loss)
-        #TODO: Add test accuracy 
+        self.log_dict({
+            'test_loss': loss,
+            'psnr': psnr,
+            'mean_abs_err': mae
+        })
         return loss
         
     def show_activations(self, x):
