@@ -110,6 +110,8 @@ class CtVolumeData(pl.LightningDataModule):
         num_pixel: int = 256,
         test_split = 0.3,
         val_split = 0.2,
+        remove_noisy = None,
+        manual_test = None
     ):
         super().__init__()
         self.paths = paths
@@ -121,11 +123,23 @@ class CtVolumeData(pl.LightningDataModule):
         loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
                                 paths, shuffle=False)
         self.dataset_size = len(loader.dataset)
-        indices = list(range(self.dataset_size))
-        split_test = int(np.round(test_split * self.dataset_size))
-        split_val = int(np.round(val_split * self.dataset_size))
+        indices = np.array(range(self.dataset_size))
+
+        remove_idx = np.array([], dtype=int)
+        if remove_noisy is not None:
+            remove_idx = np.concatenate((remove_noisy, remove_idx))
+
+        if manual_test is not None:
+            remove_idx = np.concatenate((manual_test, remove_idx))
+            test_indices = manual_test
+            split_test = 0 # remove test set from total available samples
+        
+        indices = np.delete(indices, np.unique(remove_idx)) # remove accumulated indices
+        split_test = int(np.round(test_split * len(indices)))
+        split_val = int(np.round(val_split * len(indices)))
         np.random.shuffle(indices)
-        test_indices = indices[:split_test]
+        if manual_test is None:
+            test_indices = indices[:split_test]
         val_indices = indices[split_test:split_test+split_val]
         train_indices = indices[split_test+split_val:]
 
@@ -141,6 +155,10 @@ class CtVolumeData(pl.LightningDataModule):
         return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
                                     sampler=self.val_sampler, shuffle=False)
 
-    def test_dataloader(self):
-        return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+    def test_dataloader(self, override_batch_size=None):
+        if override_batch_size is not None:
+            return get_dataloader(override_batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+                                    sampler=self.test_sampler, shuffle=False)
+        else:
+            return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
                                     sampler=self.test_sampler, shuffle=False)
