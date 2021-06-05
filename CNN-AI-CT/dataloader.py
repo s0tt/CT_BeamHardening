@@ -2,7 +2,9 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import h5py
-
+import numpy as np
+import pytorch_lightning as pl
+from torch.utils.data.sampler import SubsetRandomSampler
 
 class ConcatDataset(torch.utils.data.Dataset):
     def __init__(self, datasets):
@@ -76,7 +78,7 @@ class VolumeDataset(Dataset):
 
         return [sample_bh, sample_gt]
 
-def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, sampler=None,shuffle=True):
+def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_paths, sampler=None,shuffle=True):
     """
         @Args:
             volume_paths: list of tuples, where the first entry is the file path
@@ -85,16 +87,78 @@ def get_dataloader(batch_size, number_of_gpus, num_pixel, stride, volume_paths, 
                         [(bh_path, gt_path), ...]
     """
 
-    train_loader = DataLoader(
+    loader = DataLoader(
                 ConcatDataset([VolumeDataset(path[0], path[1], num_pixel, stride) for path in volume_paths]),
                 batch_size=batch_size,
                 shuffle=shuffle,
-                num_workers=number_of_gpus,
+                num_workers=number_of_workers,
                 pin_memory=True, # loads them directly in cuda pinned memory 
                 drop_last=True,# drop the last incomplete batch
                 prefetch_factor=2,# num of (2 * num_workers) samples prefetched
                 persistent_workers=False, # keep workers persistent after dataset loaded once
                 sampler=sampler # sampler to pass in different indices
                 ) 
-    return train_loader
+    return loader
 
+class CtVolumeData(pl.LightningDataModule):
+    def __init__(
+        self,
+        paths,
+        batch_size: int = 32,
+        num_workers: int = 2,
+        dataset_stride: int = 128, 
+        num_pixel: int = 256,
+        test_split = 0.3,
+        val_split = 0.2,
+        remove_noisy = None,
+        manual_test = None
+    ):
+        super().__init__()
+        self.paths = paths
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.dataset_stride = dataset_stride
+        self.num_pixel = num_pixel
+
+        loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
+                                paths, shuffle=False)
+        self.dataset_size = len(loader.dataset)
+        indices = np.array(range(self.dataset_size))
+
+        remove_idx = np.array([], dtype=int)
+        if remove_noisy is not None:
+            remove_idx = np.concatenate((remove_noisy, remove_idx))
+
+        if manual_test is not None:
+            remove_idx = np.concatenate((manual_test, remove_idx))
+            test_indices = manual_test
+            split_test = 0 # remove test set from total available samples
+        
+        indices = np.delete(indices, np.unique(remove_idx)) # remove accumulated indices
+        split_test = int(np.round(test_split * len(indices)))
+        split_val = int(np.round(val_split * len(indices)))
+        np.random.shuffle(indices)
+        if manual_test is None:
+            test_indices = indices[:split_test]
+        val_indices = indices[split_test:split_test+split_val]
+        train_indices = indices[split_test+split_val:]
+
+        self.train_sampler = SubsetRandomSampler(train_indices)
+        self.test_sampler = SubsetRandomSampler(test_indices)
+        self.val_sampler = SubsetRandomSampler(val_indices)
+
+    def train_dataloader(self):
+        return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+                                    sampler=self.train_sampler, shuffle=False)
+
+    def val_dataloader(self):
+        return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+                                    sampler=self.val_sampler, shuffle=False)
+
+    def test_dataloader(self, override_batch_size=None):
+        if override_batch_size is not None:
+            return get_dataloader(override_batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+                                    sampler=self.test_sampler, shuffle=False)
+        else:
+            return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
+                                    sampler=self.test_sampler, shuffle=False)
