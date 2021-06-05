@@ -13,14 +13,15 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import get_dataloader
 from dataloader import CtVolumeData
 from ref_idx import cable_holder_noisy, cable_holder_ref
+from utils import parse_dataset_paths
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-in", "-f", required=True,
-                        help="Path to input volume for training")
-    parser.add_argument("--file-gt", "-gt", required=True,
-                        help="Path to input volume ground truth file")
+                        help="Path to input volume for training or JSON file with paths")
+    parser.add_argument("--file-gt", "-gt", required=False,
+                        help="Path to input volume ground truth file, if not provided --file-in must be a JSON")
     parser.add_argument("--nr_workers", "-w", required=False, default=2,
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
@@ -40,7 +41,7 @@ def main():
     num_pixel = 128 
     test_split = 0.1
     val_split = 0.2
-    dataset_paths = [(args.file_in, args.file_gt)] 
+    dataset_paths = parse_dataset_paths(args.file_in, args.file_gt)
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
     number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
     max_epochs = int(args.max_epochs) if args.max_epochs != None else None# max number of epochs
