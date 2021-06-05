@@ -3,7 +3,6 @@ import numpy as np
 import argparse
 import torch
 import os
-from torch.utils.data.sampler import SubsetRandomSampler
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -13,6 +12,7 @@ from pytorch_lightning.accelerators import accelerator
 from CNN_ai_ct import CNN_AICT
 from dataloader import get_dataloader
 from dataloader import CtVolumeData
+from ref_idx import cable_holder_noisy, cable_holder_ref
 
 
 def main():
@@ -37,8 +37,8 @@ def main():
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
     batch_size = 16
     dataset_stride = 128 
-    num_pixel = 256 
-    test_split = 0.3
+    num_pixel = 128 
+    test_split = 0.1
     val_split = 0.2
     dataset_paths = [(args.file_in, args.file_gt)] 
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
@@ -47,14 +47,13 @@ def main():
 
     # initialize tesnorboard logger
     path_log = os.path.join(args.dir, "logs")
-    tb_logger = TensorBoardLogger(path_log)
+    tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
 
     # init checkpoints
     val_loss_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath=path_log,
         filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
-        save_top_k=3,
         mode='min',
     )
 
@@ -62,14 +61,14 @@ def main():
         monitor='train_loss',
         dirpath=path_log,
         filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
-        save_top_k=3,
         mode='min',
     )
 
     # train model
     trainer = pl.Trainer.from_argparse_args(
         parser, 
-        logger=tb_logger, 
+        logger=tb_logger,
+        log_every_n_steps = 10,
         accelerator=accelerator_type,
         callbacks=[train_loss_callback, val_loss_callback]
         )
@@ -86,18 +85,23 @@ def main():
         dataset_stride = dataset_stride, 
         num_pixel = num_pixel,
         test_split = test_split,
-        val_split = val_split
+        val_split = val_split,
+        remove_noisy = np.array(cable_holder_noisy),
+        manual_test = None # np.array(cable_holder_ref)
         )
 
     # init model
-    ref_img, ref_label = next(iter(ct_volumes.test_dataloader()))
-    cnn = CNN_AICT(ref_img=ref_img)
-    #cnn.to(device)
+    loader = ct_volumes.val_dataloader() # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
+    img_test, gt = next(iter(loader)) # grab first batch for visualization
+
+    cnn = CNN_AICT(ref_img= (img_test, gt)) # pass batch for visualization to CNN
+    cnn.to(device)
     
     trainer.fit(cnn, datamodule=ct_volumes)
 
     # test model
-    trainer.test(datamodule=CtVolumeData)
+    trainer.test(datamodule=ct_volumes, ckpt_path=val_loss_callback.best_model_path)
+    trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
 
 if __name__ == "__main__":
     main()
