@@ -3,7 +3,8 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics.regression import PSNR, MeanAbsoluteError
-from visualization import make_grid
+from visualization import make_grid, plot_pred_gt, plot_ct
+
 class CNN_AICT(pl.LightningModule):
 
     def __init__(self, ref_img=None):
@@ -15,48 +16,6 @@ class CNN_AICT(pl.LightningModule):
         )
 
         self.middleLayer = nn.Sequential(
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -84,7 +43,7 @@ class CNN_AICT(pl.LightningModule):
         # It is independent of forward
         x, y = batch
         y_hat = self(x)
-
+   
         # get input image without neighbour slices
         x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
@@ -96,7 +55,6 @@ class CNN_AICT(pl.LightningModule):
         psnr = psnr_err(residual, y_2)
         mean_abs_err = MeanAbsoluteError()
         mae = mean_abs_err(residual, y_2)
-
         self.log_dict({
             'train_loss': loss,
             'psnr': psnr,
@@ -158,8 +116,9 @@ class CNN_AICT(pl.LightningModule):
         
     def show_activations(self, x):
         if x is not None:
-            # logging reference input image       
-            self.logger.experiment.add_image("input",torch.Tensor.cpu(x[0][2]),self.current_epoch,dataformats="HW")
+            # logging reference input image
+            input_fig = plot_ct(x[0,2,:,:])
+            self.logger.experiment.add_figure("input_img", input_fig, global_step=self.current_epoch)
 
             # logging start layer activations       
             out = self.startLayer(x)
@@ -174,11 +133,26 @@ class CNN_AICT(pl.LightningModule):
 
             # logging end layer activations    
             out = self.endLayer(out)
-            grid = make_grid(out,1)
-            self.logger.experiment.add_image("endLayer", grid, self.current_epoch,dataformats="HW")
+            output_fig = plot_ct(out[0,0,:,:])
+            self.logger.experiment.add_figure("endLayer", output_fig, global_step=self.current_epoch)
+
+
+    def show_pred_gt(self, x, y, name="pred_gt"):
+        x = torch.unsqueeze(x, dim=0)
+        y = torch.unsqueeze(y, dim=0)
+        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        y_2 = torch.unsqueeze(y[:, 2,:,:], dim=1)
+        
+        y_hat = self(x)
+        residual = x_2-y_hat
+
+        fig = plot_pred_gt(residual, y_2)
+        self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img)
+        self.show_activations(self.ref_img[0])
+        for idx in range(self.ref_img[0].shape[0]):
+            self.show_pred_gt(self.ref_img[0][idx, :, :, :],self.ref_img[1][idx, :, :, :], name="ref_img_"+str(idx))
         return super().training_epoch_end(outputs)
 
     def configure_optimizers(self):
