@@ -23,7 +23,7 @@ def make_grid(output,numrows):
         i+=1
     return c
 
-def plot_pred_gt(pred: Tensor, gt: Tensor):
+def plot_pred_gt(pred, gt):
     fig = plt.figure(figsize=(16, 9))
 
     grid = ImageGrid(fig, 111,          # as in plt.subplot(111)
@@ -37,17 +37,17 @@ def plot_pred_gt(pred: Tensor, gt: Tensor):
                 )
 
     grid[0].set_title("Model prediction(residual)")
-    im = grid[0].imshow(np.squeeze(np.array(pred.detach().numpy())), cmap="gray")
-    im = grid[1].imshow(np.squeeze(np.array(gt.detach().numpy())), cmap="gray")
+    im = grid[0].imshow(np.squeeze(np.array(torch.Tensor.cpu(pred).detach().numpy())), cmap="gray")
+    im = grid[1].imshow(np.squeeze(np.array(torch.Tensor.cpu(gt).detach().numpy())), cmap="gray")
     grid[1].set_title("Mono (Ground-Truth)")
     grid[1].cax.colorbar(im)
     grid[1].cax.toggle_label(True)
     #plt.savefig(name+".png")
     return fig
 
-def plot_ct(data: Tensor, clim=None):
+def plot_ct(data, clim=None):
     fig = plt.figure(figsize=(10, 10))
-    plt.imshow(data.detach().numpy(), cmap="gray")
+    plt.imshow(torch.Tensor.cpu(data).detach().numpy(), cmap="gray")
     if clim is not None:
         plt.clim(clim[0], clim[1])
     plt.colorbar()

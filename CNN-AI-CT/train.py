@@ -58,12 +58,12 @@ def main():
         mode='min',
     )
 
-    train_loss_callback = ModelCheckpoint(
-        monitor='train_loss',
-        dirpath=path_log,
-        filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
-        mode='min',
-    )
+    # train_loss_callback = ModelCheckpoint(
+    #     monitor='train_loss',
+    #     dirpath=path_log,
+    #     filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
+    #     mode='min',
+    # )
 
     # train model
     trainer = pl.Trainer.from_argparse_args(
@@ -71,7 +71,7 @@ def main():
         logger=tb_logger,
         log_every_n_steps = 10,
         accelerator=accelerator_type,
-        callbacks=[train_loss_callback, val_loss_callback],
+        callbacks=[val_loss_callback],
         
         )
 
@@ -103,7 +103,7 @@ def main():
 
     # test model
     trainer.test(datamodule=ct_volumes, ckpt_path=val_loss_callback.best_model_path)
-    trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
+    # trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
 
 if __name__ == "__main__":
     main()

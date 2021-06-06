@@ -65,7 +65,7 @@ class CNN_AICT(pl.LightningModule):
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #15
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            nn.ReLU(),            
         )
 
 
@@ -191,12 +191,13 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(torch.tensor(self.ref_img[0]).type_as(outputs))
+        self.show_activations(self.ref_img[0].type_as(outputs[0]["preds"]))
         for idx in range(self.ref_img[0].shape[0]):
             pred = self.ref_img[0][idx, :, :, :]
             gt = self.ref_img[1][idx, :, :, :]
-            self.show_pred_gt(torch.tensor(pred).type_as(outputs),
-                                torch.tensor(gt).type_as(outputs), name="ref_img_"+str(idx))
+            self.show_pred_gt(pred.type_as(outputs[0]["preds"]),
+                            gt.type_as(outputs[0]["preds"]), 
+                            name="ref_img_"+str(idx))
         
 
     def configure_optimizers(self):
