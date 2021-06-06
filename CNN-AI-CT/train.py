@@ -30,7 +30,6 @@ def main():
 
     args = parser.parse_args()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
@@ -96,7 +95,6 @@ def main():
     img_test, gt = next(iter(loader)) # grab first batch for visualization
 
     cnn = CNN_AICT(ref_img= (img_test, gt)) # pass batch for visualization to CNN
-    cnn.to(device)
     
     trainer.fit(cnn, datamodule=ct_volumes)
 

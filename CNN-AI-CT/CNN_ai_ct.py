@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics.regression import PSNR, MeanAbsoluteError
+from torchmetrics import MetricCollection
 from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
@@ -10,6 +11,8 @@ class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None):
         super().__init__()
         self.ref_img = ref_img
+        self.metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
             nn.ReLU()
@@ -57,7 +60,7 @@ class CNN_AICT(pl.LightningModule):
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #14
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            nn.ReLU(),            
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #15
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -93,16 +96,14 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        psnr_err = PSNR()
-        psnr = psnr_err(residual, y_2)
-        mean_abs_err = MeanAbsoluteError()
-        mae = mean_abs_err(residual, y_2)
+        metric_vals = self.metrics(residual, y_2)
         self.log_dict({
             'train_loss': loss,
-            'psnr': psnr,
-            'mean_abs_err': mae
-        })
+            'psnr': metric_vals["PSNR"],
+            'mean_abs_err': metric_vals["MeanAbsoluteError"]
+        }, sync_dist=True)
         return loss
+
 
     def validation_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -117,16 +118,12 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        psnr_err = PSNR()
-        psnr = psnr_err(residual, y_2)
-        mean_abs_err = MeanAbsoluteError()
-        mae = mean_abs_err(residual, y_2)
-
+        metric_vals = self.metrics(residual, y_2)
         self.log_dict({
             'val_loss': loss,
-            'psnr': psnr,
-            'mean_abs_err': mae
-        })
+            'psnr': metric_vals["PSNR"],
+            'mean_abs_err': metric_vals["MeanAbsoluteError"]
+        }, sync_dist=True)
 
         return loss
 
@@ -143,17 +140,12 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        acc = 0
-        psnr_err = PSNR()
-        psnr = psnr_err(residual, y_2)
-        mean_abs_err = MeanAbsoluteError()
-        mae = mean_abs_err(residual, y_2)
-
+        metric_vals = self.metrics(residual, y_2)
         self.log_dict({
             'test_loss': loss,
-            'psnr': psnr,
-            'mean_abs_err': mae
-        })
+            'psnr': metric_vals["PSNR"],
+            'mean_abs_err': metric_vals["MeanAbsoluteError"]
+        }, sync_dist=True)
         return loss
         
     def show_activations(self, x):
