@@ -30,6 +30,7 @@ def main():
 
     args = parser.parse_args()
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
@@ -70,7 +71,8 @@ def main():
         logger=tb_logger,
         log_every_n_steps = 10,
         accelerator=accelerator_type,
-        callbacks=[train_loss_callback, val_loss_callback]
+        callbacks=[train_loss_callback, val_loss_callback],
+        
         )
 
     # TODO: Add Command Line Interface (CLI)
@@ -94,7 +96,8 @@ def main():
     loader = ct_volumes.val_dataloader() # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
     img_test, gt = next(iter(loader)) # grab first batch for visualization
 
-    cnn = CNN_AICT(ref_img= (img_test, gt)) # pass batch for visualization to CNN
+    cnn = CNN_AICT(ref_img=[img_test, gt]) # pass batch for visualization to CNN
+    cnn.to(device)
     
     trainer.fit(cnn, datamodule=ct_volumes)
 

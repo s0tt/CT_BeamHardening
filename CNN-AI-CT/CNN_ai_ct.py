@@ -11,7 +11,9 @@ class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None):
         super().__init__()
         self.ref_img = ref_img
-        self.metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        self.train_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        self.val_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        self.test_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
 
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
@@ -60,7 +62,7 @@ class CNN_AICT(pl.LightningModule):
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #14
             nn.BatchNorm2d(64),
-            nn.ReLU(),            
+            nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #15
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -96,14 +98,15 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        metric_vals = self.metrics(residual, y_2)
-        self.log_dict({
-            'train_loss': loss,
-            'psnr': metric_vals["PSNR"],
-            'mean_abs_err': metric_vals["MeanAbsoluteError"]
-        }, sync_dist=True)
-        return loss
+        return {'loss': loss, 'preds': residual, 'target': y_2}
 
+    def train_step_end(self, outputs):
+        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
+        self.log_dict({
+            'train_loss': outputs["loss"],
+            'train_psnr': metric_vals["PSNR"],
+            'train_mean_abs_err': metric_vals["MeanAbsoluteError"]
+        })
 
     def validation_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -118,14 +121,15 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        metric_vals = self.metrics(residual, y_2)
-        self.log_dict({
-            'val_loss': loss,
-            'psnr': metric_vals["PSNR"],
-            'mean_abs_err': metric_vals["MeanAbsoluteError"]
-        }, sync_dist=True)
+        return {'loss': loss, 'preds': residual, 'target': y_2}
 
-        return loss
+    def validation_step_end(self, outputs):
+        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
+        self.log_dict({
+            'val_loss': outputs["loss"],
+            'val_psnr': metric_vals["PSNR"],
+            'val_mean_abs_err': metric_vals["MeanAbsoluteError"]
+        })
 
     def test_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -140,13 +144,16 @@ class CNN_AICT(pl.LightningModule):
         # calculate loss from ground-trouth with input image - predicted residual artifact
         residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
-        metric_vals = self.metrics(residual, y_2)
+        
+        return {'loss': loss, 'preds': residual, 'target': y_2}
+
+    def test_step_end(self, outputs):
+        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
-            'test_loss': loss,
-            'psnr': metric_vals["PSNR"],
-            'mean_abs_err': metric_vals["MeanAbsoluteError"]
-        }, sync_dist=True)
-        return loss
+            'test_loss': outputs["loss"],
+            'test_psnr': metric_vals["PSNR"],
+            'test_mean_abs_err': metric_vals["MeanAbsoluteError"]
+        })
         
     def show_activations(self, x):
         if x is not None:
@@ -184,10 +191,13 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img[0])
+        self.show_activations(torch.tensor(self.ref_img[0]).type_as(outputs))
         for idx in range(self.ref_img[0].shape[0]):
-            self.show_pred_gt(self.ref_img[0][idx, :, :, :],self.ref_img[1][idx, :, :, :], name="ref_img_"+str(idx))
-        return super().training_epoch_end(outputs)
+            pred = self.ref_img[0][idx, :, :, :]
+            gt = self.ref_img[1][idx, :, :, :]
+            self.show_pred_gt(torch.tensor(pred).type_as(outputs),
+                                torch.tensor(gt).type_as(outputs), name="ref_img_"+str(idx))
+        
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, betas=(0.9, 0.999))
