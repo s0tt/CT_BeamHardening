@@ -5,6 +5,15 @@ import numpy as np
 import nexusformat.nexus as nx # at the moment just needed for debugging purposes
 import time
 import struct
+from dataloader import get_dataloader
+from visualization import make_grid
+import torch
+import numpy as np
+import h5py
+import matplotlib.pyplot as plt
+import sys
+import os
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 detector_pixel_size = 0.000127 # [m]
 distance_source_detector = 1.229268# [m]
@@ -32,7 +41,6 @@ def trans_hdf5_incremental(f_hdf5):
           new_volume_dataset.resize(new_volume_dataset.shape[0]+vol_data_3d.shape[0], axis=0)
           new_volume_dataset[y_slice, :, :] = vol_data_3d
       new_volume_dataset.attrs['MATLAB_class'] = 'double'
-
 
 def compare_hdf5(f_hdf5_normal,f_hdf5_transposed, nr_slices=20):
   #open files and set cache to zero for better comparison
@@ -142,4 +150,84 @@ with h5py.File("normal_test_yiterate.hdf5", "w") as f_normal:
   image_dataset = f_normal.create_dataset("Image", data=vol_data[:][0:20][:], dtype='float64', chunks=True)
   image_dataset.attrs['MATLAB_class'] = 'double'
 
+def plot_256slices_from_hdf5(clim, loader, indices, rows, fig_path):
+    if not os.path.exists(fig_path):
+        os.makedirs(fig_path)
 
+    # Volume iteration loop
+    data_img = []
+    data_gt = []
+    cnt = 0
+    for img, gt in iter(loader):
+        if cnt % 5 == 0:
+            print("Counter:", cnt)
+        #data.append(img[:, 2, :, :])
+
+        data_img.append(np.squeeze(np.array(img[:, 2, :, :])))
+        data_gt.append(np.squeeze(np.array(gt[:, 2, :, :])))
+        # Set up figure and image grid
+        fig = plt.figure(figsize=(16, 9))
+
+        grid = ImageGrid(fig, 111,          # as in plt.subplot(111)
+                 nrows_ncols=(1,2),
+                 axes_pad=0.15,
+                 share_all=True,
+                 cbar_location="right",
+                 cbar_mode="single",
+                 cbar_size="7%",
+                 cbar_pad=0.15,
+                 )
+        #plt.subplot(1,3,1)
+        grid[0].set_title("Poly")
+        im = grid[0].imshow(np.squeeze(np.array(img[:, 2, :, :])), cmap="gray")
+        #im.clim(clim[0], clim[1])
+        #plt.subplot(1,3,2)
+        im = grid[1].imshow(np.squeeze(np.array(gt[:, 2, :, :])), cmap="gray")
+        grid[1].set_title("Mono (Ground-Truth)")
+        #im.clim(clim[0], clim[1])
+        #plt.subplot(1,3,3)
+        grid[1].cax.colorbar(im)
+        grid[1].cax.toggle_label(True)
+        
+        #plt.colorbar()
+        plt.savefig(fig_path+"img_"+str(cnt)+".png")
+        plt.close()
+        cnt += 1
+    data_stack_img = np.stack(data_img)
+    data_stack_gt = np.stack(data_gt)
+    #print("Data stacked:", data_stack.shape)
+    #print("Max:\t{} | Min:\t{}".format(np.amax(img), np.amin(img)))
+    plt.figure(figsize=(12,8), dpi= 100)
+    grid_array = make_grid(data_stack_img,int(np.sqrt(data_stack_img.shape[0])))
+    plt.imshow(grid_array, cmap="gray")
+    plt.clim(clim[0], clim[1])
+    plt.colorbar()
+    plt.savefig(fig_path+"grid_view_all_ct.png")
+
+    plt.figure(figsize=(12,8), dpi= 100)
+    grid_array = make_grid(data_stack_gt,int(np.sqrt(data_stack_gt.shape[0])))
+    plt.imshow(grid_array, cmap="gray")
+    plt.clim(clim[0], clim[1])
+    plt.colorbar()
+    plt.savefig(fig_path+"grid_view_all_gt.png")
+            
+        #plt.show()
+
+from torch.utils.data.sampler import SequentialSampler
+#path_in = "/net/pasnas01/pool1/enpro-2021-voxie/reconstructed_volumes/cable_holder_chain/poly/volume.hdf5"
+path_ct = "/home/so/TIFFs/vol_cut_cableHolder_poly.hdf5"
+path_gt = "/home/so/TIFFs/vol_cut_cableHolder_mono.hdf5"
+path_out = "/home/so/TIFFs/cableBoth128/"
+
+loader = get_dataloader(1, 2, 128, 128, [(path_ct, path_gt)], 
+                                sampler=None, shuffle=False)
+idx = list(range(len(loader.dataset)))
+print("Idx:", idx)
+sampler = SequentialSampler(idx)
+loader = get_dataloader(1, 2, 128, 128, [(path_ct, path_gt)], 
+                                sampler=sampler, shuffle=False)
+print("Loader data length:", len(loader.dataset))
+print("Loader datasets:", loader.dataset.len_datasets)
+print("Num datasets:", loader.dataset.num_datasets)
+
+plot_256slices_from_hdf5([-2, 100],loader, idx, 2, path_out)     
