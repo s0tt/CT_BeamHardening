@@ -157,6 +157,22 @@ def cut_air_slices_by_axis(axis: int, path_old: str, path_new:str) -> tuple:
 
     return (slices_start, slices_end)
 
+def add_headers_and_metadata(path_old: str, path_new: str): 
+    """
+        Adds all headers and metadata from the old volume without the 
+        volume dataset to the newly created volume. 
+    """
+    with h5py.File(path_old, "r") as f_in:
+        with h5py.File(path_new, "r+") as f_out:
+            for key in f_in.keys():
+                if key != "Volume":
+                    # Get parent group name for copy
+                    group_path = f_in[key].parent.name
+                    # Check existence of group, else create group+parent
+                    group_id = f_out.require_group(group_path)
+                    f_in.copy(key, group_id, group_path+key)
+                              
+
 def cut_volume(path_in_poly: str, path_in_mono: str):
     """
         Removes slices with to much air from all 
@@ -216,7 +232,10 @@ def main():
     trans_hdf5_incremental(args.file_path_in_poly, args.file_path_out_poly)
     
     cut_volume(args.file_path_out_poly, args.file_path_out_mono)
-    
+
+    add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
+    add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
+
   
 
 if __name__ == "__main__":
