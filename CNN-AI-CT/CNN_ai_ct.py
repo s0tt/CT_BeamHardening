@@ -101,7 +101,7 @@ class CNN_AICT(pl.LightningModule):
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def train_step_end(self, outputs):
-        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
+        metric_vals = self.train_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
             'train_loss': outputs["loss"],
             'train_psnr': metric_vals["PSNR"],
@@ -124,7 +124,7 @@ class CNN_AICT(pl.LightningModule):
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def validation_step_end(self, outputs):
-        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
+        metric_vals = self.val_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
             'val_loss': outputs["loss"],
             'val_psnr': metric_vals["PSNR"],
