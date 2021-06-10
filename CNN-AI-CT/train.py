@@ -38,7 +38,7 @@ def main():
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
     batch_size = 16
     dataset_stride = 128 
-    num_pixel = 128 
+    num_pixel = 256 
     test_split = 0.1
     val_split = 0.2
     dataset_paths = parse_dataset_paths(args.file_in, args.file_gt)
