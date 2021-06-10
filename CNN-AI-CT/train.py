@@ -42,9 +42,11 @@ def main():
     num_pixel = 256 
     test_split = 0.1
     val_split = 0.2
+    noise_removal_threshold = 2.5
     dataset_paths = parse_dataset_paths(args.file_in)
     add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
-    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths, args.file_noisy_indexes, threshold=2.5)
+    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths,
+                args.file_noisy_indexes, threshold=noise_removal_threshold)
     
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
     number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
