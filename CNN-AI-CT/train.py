@@ -76,7 +76,7 @@ def main():
         callbacks=[val_loss_callback],
         
         )
-
+    
     # TODO: Add Command Line Interface (CLI)
     #cli = LightningCLI(LitClassifier, MNISTDataModule, seed_everything_default=1234)
     #result = cli.trainer.test(cli.model, datamodule=cli.datamodule)

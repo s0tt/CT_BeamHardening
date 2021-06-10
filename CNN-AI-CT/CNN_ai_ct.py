@@ -79,7 +79,7 @@ class CNN_AICT(pl.LightningModule):
         out2 = self.middleLayer(out1)
         out3 = self.endLayer(out2)
         return out3
-
+        
     def on_train_start(self) -> None:
         sampleImg=torch.rand((1,5,256,256)) #sample image for graph
         self.logger.experiment.add_graph(CNN_AICT(),sampleImg)

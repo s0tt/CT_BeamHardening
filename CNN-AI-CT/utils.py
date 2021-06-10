@@ -1,47 +1,50 @@
 import json
+import h5py
 
-def parse_dataset_paths(ct_path) -> list:
-    # interpret input as JSON file if no gt specified
+def parse_dataset_paths(ct_data_path) -> list:
+    # returns tuple with (poly_path, mono_path, name)
     return_list = []
-    f = open(ct_path, "r")
+    f = open(ct_data_path, "r")
     data = json.load(f, encoding="utf-8")
     for entry in data["datasets"]:
         return_list.append((str(entry["ct"]), str(entry["gt"]), str(entry["name"])))
     f.close()
     return return_list
 
-def add_datasets_to_noisy_images_json(dataset_path, noisy_data_path): 
+def add_datasets_to_noisy_images_json(dataset_paths, noisy_data_path): 
     """
         adds dataset entrys to noisy_data_path json if they do not yet exist
     """
-    dataset_file = open(dataset_path, "r")
-    dataset_data = json.load(dataset_file, encoding="utf-8")
 
-    with open(noisy_data_path, "r+") as noise_index_file: 
-        noise_index_data = json.load(noise_index_file, encoding="utf-8")
-        for entry in dataset_data["datasets"]:
-                if entry["name"] not in noise_index_data["datasets"].keys(): 
-                        noise_index_data["datasets"].append(
-                           {
-                            "name": entry['name'],
-                            "noisy_samples_known": True,
-                            "nr_samples": 0,
-                            "nr_noisy_samples": 0, 
-                            "noisy_indexes": [],
-                            }
-                        )
-        json.dump(noise_index_data, noise_index_file)
+    dataset_paths = parse_dataset_paths(dataset_paths)
 
-    dataset_file.close()
+    noise_index_file = open(noisy_data_path, "r")
+    noise_index_data = json.load(noise_index_file, encoding="utf-8")
+    noise_index_file.close()
 
-def parse_json_after_noisy_flags(json_path): 
-    return_list = []
-    f = open(json_path, "r")
-    data = json.load(f, encoding="utf-8")
-    for entry in data["datasets"]:
-            return_list.append((str(entry["noisy_samples_known"])))
-    f.close()
+    for entry in dataset_paths:
+        entry_exists = False
+        for entry_noise in noise_index_data["datasets"]: 
+            if entry[2] == entry_noise["name"]:
+                entry_exists = True
+
+        if not entry_exists: 
+            noise_index_data["datasets"].append(
+                {
+                "name": entry[2],
+                "noisy_samples_known": False,
+                "nr_samples": 0,
+                "nr_noisy_samples": 0, 
+                "noisy_indexes": [],
+                }
+            )
+
+    with open(noisy_data_path, "w") as noise_index_file:
+        json.dump(noise_index_data, noise_index_file, indent=4)
+
+def get_mean_grey_value(volume_path): 
+    with h5py.File(volume_path, 'r') as h5f:
+        mean_grey_value = h5f["Volume"].attrs['Mean_grey_value']
     
-    return return_list
-
+    return mean_grey_value
  

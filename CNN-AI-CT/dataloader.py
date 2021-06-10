@@ -7,7 +7,7 @@ import numpy as np
 import pytorch_lightning as pl
 from torch.utils.data.sampler import SubsetRandomSampler
 
-from utils import parse_json_after_noisy_flags
+from utils import get_mean_grey_value
 
 
 class ConcatDataset(torch.utils.data.Dataset):
@@ -105,7 +105,7 @@ def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_path
     return loader
 
 
-def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path): 
+def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, factor=1): 
     """
         This function adds the noisy indexes to the noisy_indexes_path file if the noisy indexes
         are not yet known. 
@@ -113,58 +113,61 @@ def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_
         Note: num_pixel and stride should never be changed after this function was executed once,
         or all noise flags have to set manually to zero 
     """
-    dataset_noisy_flags = parse_json_after_noisy_flags(noisy_indexes_path)
 
-    mean_grey_value = 1000
-    factor = 1 
 
-    noise_index_file = open(noisy_indexes_path, "r+") 
+    noise_index_file = open(noisy_indexes_path, "r") 
     noise_index_data = json.load(noise_index_file, encoding="utf-8")
+    noise_index_file.close()
 
-
-
-    for index, noisy_flag in enumerate(dataset_noisy_flags): 
+    for dataset_idx, entry in enumerate(noise_index_data["datasets"]): 
 
         # Check if dataset was already parsed
-        if not noisy_flag: 
-            dataset = VolumeDataset(volume_paths[index][0], volume_paths[index][1], num_pixel, dataset_stride)
+        if not entry["noisy_samples_known"]: 
+            dataset = VolumeDataset(volume_paths[dataset_idx][0],
+                                    volume_paths[dataset_idx][1],
+                                    num_pixel, dataset_stride)
             indexes_to_remove = []
+            mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0])
+            print(mean_grey_value)
 
             # iterate over all samples
-            for index in range(len(dataset)):
-                sample = dataset.__getitem__(index)
-                mean_grey_value_sample = (sample.flatten().sum())/sample.size
+            for idx in range(len(dataset)):
+                print(idx)
+                sample = dataset.__getitem__(idx)[0]
 
+                mean_grey_value_sample = (sample.flatten().sum())/sample.size
+                print("Mean grey value sample: {}".format(mean_grey_value_sample))
                 # check if sample is just noise
                 if mean_grey_value_sample < mean_grey_value*factor: 
-                    indexes_to_remove.append(index) 
+                    print("removed")
+                    indexes_to_remove.append(idx) 
+
+                if idx ==5: 
+                    break
             
-            # add noisy elements to noise_index_data
-            for idx, entry in enumerate(noise_index_data["datasets"]): 
-                if entry['name'] == volume_paths[index][2]:
-                    noise_index_data["datasets"][idx] = {
-                                                        "name": entry['name'],
-                                                        "noisy_samples_known": True,
-                                                        "nr_samples": len(dataset),
-                                                        "nr_noisy_samples": len(indexes_to_remove), 
-                                                        "noisy_indexes": indexes_to_remove,
-                                                        }
+            # add noisy element indexes
+            noise_index_data["datasets"][dataset_idx].update({
+                                                "noisy_samples_known": True,
+                                                "nr_samples": len(dataset),
+                                                "nr_noisy_samples": len(indexes_to_remove), 
+                                                "noisy_indexes": indexes_to_remove,
+                                                })
 
     
-    json.dump(noise_index_data, noise_index_file)
-    noise_index_file.close()
+    with open(noisy_indexes_path, "w") as noise_index_file:  
+        json.dump(noise_index_data, noise_index_file, indent=4)
 
 
 def get_noisy_indexes(noisy_indexes_path: str) -> np.ndarray:
 
-    noisy_indexes = np.array([])
+    noisy_indexes = np.array([], dtype=int)
     noise_index_file = open(noisy_indexes_path, "r+") 
     noise_index_data = json.load(noise_index_file, encoding="utf-8")
 
     offset = 0
     for entry in noise_index_data["datasets"]: 
                 # check if sample is just noise
-        noisy_indexes = np.concatenate((noisy_indexes, np.array(entry["noisy_indexes"]) + offset))
+        noisy_indexes = np.concatenate((noisy_indexes, np.array(entry["noisy_indexes"], dtype=int) + offset))
         offset += entry["nr_samples"]
     
     noise_index_file.close()
@@ -178,7 +181,6 @@ class CtVolumeData(pl.LightningDataModule):
     def __init__(
         self,
         paths,
-        path_noise_indexes, 
         batch_size: int = 32,
         num_workers: int = 2,
         dataset_stride: int = 128, 
@@ -190,7 +192,6 @@ class CtVolumeData(pl.LightningDataModule):
     ):
         super().__init__()
         self.paths = paths
-        self.path_noise_indexes = path_noise_indexes 
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.dataset_stride = dataset_stride
