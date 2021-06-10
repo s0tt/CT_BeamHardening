@@ -105,7 +105,7 @@ def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_path
     return loader
 
 
-def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, factor=1): 
+def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, threshold=1): 
     """
         This function adds the noisy indexes to the noisy_indexes_path file if the noisy indexes
         are not yet known. 
@@ -127,23 +127,16 @@ def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_
                                     volume_paths[dataset_idx][1],
                                     num_pixel, dataset_stride)
             indexes_to_remove = []
-            mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0])
-            print(mean_grey_value)
+            #mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0]) #(Use maybe later)
 
             # iterate over all samples
             for idx in range(len(dataset)):
-                print(idx)
-                sample = dataset.__getitem__(idx)[0]
-
-                mean_grey_value_sample = (sample.flatten().sum())/sample.size
-                print("Mean grey value sample: {}".format(mean_grey_value_sample))
+                middle_slice = dataset.__getitem__(idx)[0][2, :, :]
+                mean_grey_value_sample = (middle_slice.flatten().sum())/middle_slice.size
                 # check if sample is just noise
-                if mean_grey_value_sample < mean_grey_value*factor: 
-                    print("removed")
+                if mean_grey_value_sample < threshold: 
                     indexes_to_remove.append(idx) 
 
-                if idx ==5: 
-                    break
             
             # add noisy element indexes
             noise_index_data["datasets"][dataset_idx].update({
@@ -187,7 +180,7 @@ class CtVolumeData(pl.LightningDataModule):
         num_pixel: int = 256,
         test_split = 0.3,
         val_split = 0.2,
-        remove_noisy = None,
+        noisy_indexes = None,
         manual_test = None
     ):
         super().__init__()
@@ -203,8 +196,8 @@ class CtVolumeData(pl.LightningDataModule):
         indices = np.array(range(self.dataset_size))
 
         remove_idx = np.array([], dtype=int)
-        if remove_noisy is not None:
-            remove_idx = np.concatenate((remove_noisy, remove_idx))
+        if noisy_indexes is not None:
+            remove_idx = np.concatenate((noisy_indexes, remove_idx))
         
         indices = np.delete(indices, np.unique(remove_idx)) # remove accumulated indices
         split_test = int(np.round(test_split * len(indices)))

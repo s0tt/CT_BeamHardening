@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.accelerators import accelerator
+from torch.nn.modules.activation import Threshold
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
@@ -24,6 +25,8 @@ def main():
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
                         help="directory where training artefacts are saved")
+    parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=False, 
+                        help="Parameter to activate/ deactive the removement of noisy slices")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -41,7 +44,7 @@ def main():
     val_split = 0.2
     dataset_paths = parse_dataset_paths(args.file_in)
     add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
-    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths, args.file_noisy_indexes)
+    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths, args.file_noisy_indexes, threshold=2.5)
     
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
     number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
@@ -76,10 +79,15 @@ def main():
         callbacks=[val_loss_callback],
         
         )
-    
+
     # TODO: Add Command Line Interface (CLI)
     #cli = LightningCLI(LitClassifier, MNISTDataModule, seed_everything_default=1234)
     #result = cli.trainer.test(cli.model, datamodule=cli.datamodule)
+
+    if args.remove_noisy_slices:
+        noisy_indexes = get_noisy_indexes(args.file_noisy_indexes)
+    else: 
+        noisy_indexes = None
 
     # CT data loading
     ct_volumes = CtVolumeData(
@@ -90,7 +98,7 @@ def main():
         num_pixel = num_pixel,
         test_split = test_split,
         val_split = val_split,
-        remove_noisy = get_noisy_indexes(args.file_noisy_indexes),
+        noisy_indexes = None,
         manual_test = None # np.array(cable_holder_ref)
         )
 
