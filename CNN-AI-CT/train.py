@@ -10,18 +10,16 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.accelerators import accelerator
 
 from CNN_ai_ct import CNN_AICT
-from dataloader import get_dataloader
-from dataloader import CtVolumeData
-from ref_idx import cable_holder_noisy, cable_holder_ref
-from utils import parse_dataset_paths
+from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
+from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-in", "-f", required=True,
-                        help="Path to input volume for training or JSON file with paths")
-    parser.add_argument("--file-gt", "-gt", required=False,
-                        help="Path to input volume ground truth file, if not provided --file-in must be a JSON")
+                        help="Path to json file that contains all datasets")
+    parser.add_argument("--file-noisy-indexes", "-nf", required=True,
+                        help="Path to the json file that contains the noisy indexes")
     parser.add_argument("--nr_workers", "-w", required=False, default=2,
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
@@ -41,11 +39,15 @@ def main():
     num_pixel = 256 
     test_split = 0.1
     val_split = 0.2
-    dataset_paths = parse_dataset_paths(args.file_in, args.file_gt)
+    dataset_paths = parse_dataset_paths(args.file_in)
+    add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
+    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths, args.file_noisy_indexes)
+    
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
     number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
     max_epochs = int(args.max_epochs) if args.max_epochs != None else None# max number of epochs
 
+    
     # initialize tesnorboard logger
     path_log = os.path.join(args.dir, "logs")
     tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
@@ -88,7 +90,7 @@ def main():
         num_pixel = num_pixel,
         test_split = test_split,
         val_split = val_split,
-        remove_noisy = np.array(cable_holder_noisy),
+        remove_noisy = get_noisy_indexes(args.file_noisy_indexes),
         manual_test = None # np.array(cable_holder_ref)
         )
 

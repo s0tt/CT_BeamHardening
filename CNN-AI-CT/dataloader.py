@@ -1,3 +1,4 @@
+import json
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -5,6 +6,9 @@ import h5py
 import numpy as np
 import pytorch_lightning as pl
 from torch.utils.data.sampler import SubsetRandomSampler
+
+from utils import parse_json_after_noisy_flags
+
 
 class ConcatDataset(torch.utils.data.Dataset):
     def __init__(self, datasets):
@@ -100,10 +104,81 @@ def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_path
                 ) 
     return loader
 
+
+def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path): 
+    """
+        This function adds the noisy indexes to the noisy_indexes_path file if the noisy indexes
+        are not yet known. 
+
+        Note: num_pixel and stride should never be changed after this function was executed once,
+        or all noise flags have to set manually to zero 
+    """
+    dataset_noisy_flags = parse_json_after_noisy_flags(noisy_indexes_path)
+
+    mean_grey_value = 1000
+    factor = 1 
+
+    noise_index_file = open(noisy_indexes_path, "r+") 
+    noise_index_data = json.load(noise_index_file, encoding="utf-8")
+
+
+
+    for index, noisy_flag in enumerate(dataset_noisy_flags): 
+
+        # Check if dataset was already parsed
+        if not noisy_flag: 
+            dataset = VolumeDataset(volume_paths[index][0], volume_paths[index][1], num_pixel, dataset_stride)
+            indexes_to_remove = []
+
+            # iterate over all samples
+            for index in range(len(dataset)):
+                sample = dataset.__getitem__(index)
+                mean_grey_value_sample = (sample.flatten().sum())/sample.size
+
+                # check if sample is just noise
+                if mean_grey_value_sample < mean_grey_value*factor: 
+                    indexes_to_remove.append(index) 
+            
+            # add noisy elements to noise_index_data
+            for idx, entry in enumerate(noise_index_data["datasets"]): 
+                if entry['name'] == volume_paths[index][2]:
+                    noise_index_data["datasets"][idx] = {
+                                                        "name": entry['name'],
+                                                        "noisy_samples_known": True,
+                                                        "nr_samples": len(dataset),
+                                                        "nr_noisy_samples": len(indexes_to_remove), 
+                                                        "noisy_indexes": indexes_to_remove,
+                                                        }
+
+    
+    json.dump(noise_index_data, noise_index_file)
+    noise_index_file.close()
+
+
+def get_noisy_indexes(noisy_indexes_path: str) -> np.ndarray:
+
+    noisy_indexes = np.array([])
+    noise_index_file = open(noisy_indexes_path, "r+") 
+    noise_index_data = json.load(noise_index_file, encoding="utf-8")
+
+    offset = 0
+    for entry in noise_index_data["datasets"]: 
+                # check if sample is just noise
+        noisy_indexes = np.concatenate((noisy_indexes, np.array(entry["noisy_indexes"]) + offset))
+        offset += entry["nr_samples"]
+    
+    noise_index_file.close()
+
+    return noisy_indexes
+
+
+
+
 class CtVolumeData(pl.LightningDataModule):
     def __init__(
         self,
         paths,
+        path_noise_indexes, 
         batch_size: int = 32,
         num_workers: int = 2,
         dataset_stride: int = 128, 
@@ -115,6 +190,7 @@ class CtVolumeData(pl.LightningDataModule):
     ):
         super().__init__()
         self.paths = paths
+        self.path_noise_indexes = path_noise_indexes 
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.dataset_stride = dataset_stride
@@ -128,11 +204,6 @@ class CtVolumeData(pl.LightningDataModule):
         remove_idx = np.array([], dtype=int)
         if remove_noisy is not None:
             remove_idx = np.concatenate((remove_noisy, remove_idx))
-
-        if manual_test is not None:
-            remove_idx = np.concatenate((manual_test, remove_idx))
-            test_indices = manual_test
-            split_test = 0 # remove test set from total available samples
         
         indices = np.delete(indices, np.unique(remove_idx)) # remove accumulated indices
         split_test = int(np.round(test_split * len(indices)))
