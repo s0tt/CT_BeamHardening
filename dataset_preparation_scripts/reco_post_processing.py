@@ -4,8 +4,6 @@ import argparse
 import os
 
 DATATYPE_USED = "float32"
-gv_factor = 1 # scaling factor for the mean grey value
-
 
 def trans_hdf5_incremental(path_in: str, path_out: str):
     with h5py.File(path_in, "r") as f_in:
@@ -78,12 +76,12 @@ def cut_volume_by_axis(axis: int, cuts_axis: tuple, path_old: str, path_new: str
             new_volume_dataset.attrs['MATLAB_class'] = 'double'
 
 
-def cut_air_slices_by_axis(axis: int, path_old: str, path_new:str) -> tuple:  
+def cut_air_slices_by_axis(axis: int, path_old: str, path_new: str, factor: float) -> tuple:  
     """
         removes the edge slices in both directions perpendicular to the passed axis, 
         where the mean grey value is lower than the grey value of the full volume 
         multiplied with a scaling factor:  
-            (mean_grey_value*gv_factor > mean_grey_value_slice)
+            (mean_grey_value*factor > mean_grey_value_slice)
 
         @return: 
             (slices_start, slices_end): 
@@ -112,7 +110,7 @@ def cut_air_slices_by_axis(axis: int, path_old: str, path_new:str) -> tuple:
 
                 mean_grey_value_slice = (vol_slice.flatten().sum())/vol_slice.size
 
-                if not first_relevant_slice and (mean_grey_value*gv_factor > mean_grey_value_slice):
+                if not first_relevant_slice and (mean_grey_value*factor > mean_grey_value_slice):
                     pass
                 else: 
                     if not first_relevant_slice:
@@ -146,7 +144,7 @@ def cut_air_slices_by_axis(axis: int, path_old: str, path_new:str) -> tuple:
                 elif axis == 2: 
                     vol_slice = new_volume_dataset[:, :, -1]
                 mean_slice_grey_value = vol_slice.flatten().sum()/vol_slice.size
-                if mean_slice_grey_value < mean_grey_value*gv_factor: 
+                if mean_slice_grey_value < mean_grey_value*factor: 
                     new_volume_dataset.resize(new_volume_dataset.shape[axis]-1, axis=axis)
                 else: 
                     slices_end = slice_nr
@@ -159,7 +157,7 @@ def cut_air_slices_by_axis(axis: int, path_old: str, path_new:str) -> tuple:
 
 def add_headers_and_metadata(path_old: str, path_new: str): 
     """
-        Adds all headers and metadata from the old volume without the 
+        Adds all headers and metadata from the old volume out of the 
         volume dataset to the newly created volume. 
     """
     with h5py.File(path_old, "r") as f_in:
@@ -173,7 +171,7 @@ def add_headers_and_metadata(path_old: str, path_new: str):
                     f_in.copy(key, group_id, group_path+key)
                               
 
-def cut_volume(path_in_poly: str, path_in_mono: str):
+def cut_volume(path_in_poly: str, path_in_mono: str, factor: float):
     """
         Removes slices with to much air from all 
         6 edge planes of the cuboid. path_in <=> path_out 
@@ -187,11 +185,11 @@ def cut_volume(path_in_poly: str, path_in_mono: str):
     name_new_0_poly = name_old_poly+"_dim_0_reduced.hdf5"
     name_new_1_poly = name_old_poly+"_dim_1_reduced.hdf5"
 
-    cuts_x = cut_air_slices_by_axis(0, path_in_poly, name_new_0_poly)
+    cuts_x = cut_air_slices_by_axis(0, path_in_poly, name_new_0_poly, factor)
     os.remove(path_in_poly)
-    cuts_y = cut_air_slices_by_axis(1, name_new_0_poly, name_new_1_poly)
+    cuts_y = cut_air_slices_by_axis(1, name_new_0_poly, name_new_1_poly, factor)
     os.remove(name_new_0_poly)
-    cuts_z = cut_air_slices_by_axis(2, name_new_1_poly, path_in_poly)
+    cuts_z = cut_air_slices_by_axis(2, name_new_1_poly, path_in_poly, factor)
     os.remove(name_new_1_poly)
     
 
@@ -224,6 +222,11 @@ def main():
     parser.add_argument("--file-path-out-poly", "-op", required=True, type=str, 
                         help="absolut path of output hdf5 file")
 
+    parser.add_argument("--mean-value-factor", "-fc", required=False, default=1, type=float, 
+                        help="""The factor is multiplied with the mean_grey_value. Slices are 
+                            then cutted if the mean slice grey value is lower as this product.""")
+             
+
 
     args = parser.parse_args()
 
@@ -231,7 +234,7 @@ def main():
     trans_hdf5_incremental(args.file_path_in_mono, args.file_path_out_mono)
     trans_hdf5_incremental(args.file_path_in_poly, args.file_path_out_poly)
     
-    cut_volume(args.file_path_out_poly, args.file_path_out_mono)
+    cut_volume(args.file_path_out_poly, args.file_path_out_mono, args.mean_value_factor)
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
