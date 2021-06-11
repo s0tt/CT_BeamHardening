@@ -103,11 +103,12 @@ def preprocess(img):
    if args.white_path is not None:
       img_white = np.array(Image.open(args.white_path), dtype=DATATYPE_NUMPY)
       img = ffc(img, img_white)
-      img = conv_attenuation(img)
-      return img
    else:
-      print("Warning: White file not provided, FFC&Attenuation transform not executed")
-      return img
+      print("Warning: White file not provided, FFC transform not executed")
+
+   img = conv_attenuation(img)
+   return img
+
 
 
 def get_image_list(image_dir):
