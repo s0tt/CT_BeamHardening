@@ -75,10 +75,14 @@ class CNN_AICT(pl.LightningModule):
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
-        out1 = self.startLayer(x)
-        out2 = self.middleLayer(out1)
-        out3 = self.endLayer(out2)
-        return out3
+        out = self.startLayer(x)
+        out = self.middleLayer(out)
+        out = self.endLayer(out)
+
+        # calculate residual as inference output
+        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1) # get input middle slices
+        residual = x_2 - out # from input image subtract predicted artefacts
+        return residual
 
     def on_train_start(self) -> None:
         sampleImg=torch.rand((1,5,256,256)) #sample image for graph
@@ -89,14 +93,11 @@ class CNN_AICT(pl.LightningModule):
         # training_step defined the train loop.
         # It is independent of forward
         x, y = batch
-        y_hat = self(x)
+        residual = self(x)
    
-        # get input image without neighbour slices
-        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
-        # calculate loss from ground-trouth with input image - predicted residual artifact
-        residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
@@ -112,14 +113,11 @@ class CNN_AICT(pl.LightningModule):
         # training_step defined the train loop.
         # It is independent of forward
         x, y = batch
-        y_hat = self(x)
+        residual = self(x)
 
-        # get input image without neighbour slices
-        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
-        # calculate loss from ground-trouth with input image - predicted residual artifact
-        residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
@@ -135,14 +133,11 @@ class CNN_AICT(pl.LightningModule):
         # training_step defined the train loop.
         # It is independent of forward
         x, y = batch
-        y_hat = self(x)
+        residual = self(x)
 
-        # get input image without neighbour slices
-        x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
+        # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
-        # calculate loss from ground-trouth with input image - predicted residual artifact
-        residual = x_2-y_hat
         loss = F.mse_loss(residual, y_2)
         
         return {'loss': loss, 'preds': residual, 'target': y_2}
