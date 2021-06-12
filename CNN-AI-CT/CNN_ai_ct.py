@@ -21,7 +21,7 @@ class CNN_AICT(pl.LightningModule):
         )
 
         self.middleLayer = nn.Sequential(
-                        nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #1
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #1
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #2
