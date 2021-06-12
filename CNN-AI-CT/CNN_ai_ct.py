@@ -166,7 +166,7 @@ class CNN_AICT(pl.LightningModule):
             grid = make_grid(out,8)
 
             self.logger.experiment.add_image("startLayer", grid, self.current_epoch,dataformats="HW")
-
+            
             # logging middle layer activations     
             out = self.middleLayer(out)
             grid = make_grid(out,8)
