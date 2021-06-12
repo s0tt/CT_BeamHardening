@@ -4,23 +4,37 @@ import torch
 from mpl_toolkits.axes_grid1 import ImageGrid
 from torch.functional import Tensor
 
-# taken from & credits to: https://learnopencv.com/tensorboard-with-pytorch-lightning/
-def make_grid(output,numrows):
-    outer=(torch.Tensor.cpu(output).detach())
-    b=np.array([]).reshape(0,outer.shape[2])
-    c=np.array([]).reshape(numrows*outer.shape[2],0)
-    i=0
-    j=0
-    while(i < outer.shape[1]):
-        img=outer[0][i]
-        b=np.concatenate((img,b),axis=0)
-        j+=1
-        if(j==numrows):
-            c=np.concatenate((c,b),axis=1)
-            b=np.array([]).reshape(0,outer.shape[2])
-            j=0
+def make_grid(data,numrows):
+    """ Create numerical grid of input data which can be used to visualize 
+    multi-dimensional data
+    taken from & credits to: https://learnopencv.com/tensorboard-with-pytorch-lightning/
+
+    Args:
+        data: input data
+        numrows: number of grid rows
+
+    Returns:
+        c: data grid
+    """
+    outer=(torch.Tensor.cpu(data).detach())
+    b = np.array([]).reshape(0,outer.shape[2]) # column array 
+    c = np.array([]).reshape(numrows*outer.shape[2],0) # row array
+    i = 0
+    j = 0
+    while(i < outer.shape[0]):
+        img = outer[i]
+        b = np.concatenate((img,b),axis=0) # append new row to b
+        j += 1
+        if(j == numrows):
+            c = np.concatenate((c,b),axis=1) # apend new column b to c
+            b = np.array([]).reshape(0,outer.shape[2]) # reinit b
+            j = 0
             
         i+=1
+    
+    # if not enough rows return intermediate b array
+    if not c.any():
+        return b
     return c
 
 def plot_pred_gt(pred, gt):

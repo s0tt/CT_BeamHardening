@@ -21,7 +21,7 @@ class CNN_AICT(pl.LightningModule):
         )
 
         self.middleLayer = nn.Sequential(
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #1
+                        nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #1
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #2
@@ -149,7 +149,32 @@ class CNN_AICT(pl.LightningModule):
             'test_psnr': metric_vals["PSNR"],
             'test_mean_abs_err': metric_vals["MeanAbsoluteError"]
         })
-        
+
+    def show_weights(self, channel_nr=[5, 64, 64]):
+        # log start filter weights
+        for i in range(channel_nr[0]):
+            weights = self.startLayer[0].weight[:, i, :, :]
+            grid = make_grid(weights,8)
+            self.logger.experiment.add_image("input_weights"+str(i), grid, global_step=self.current_epoch, dataformats="HW")
+
+        # get last conv2d from middle layers
+        idx_list = []
+        for idx, layer in enumerate(self.middleLayer):
+            if isinstance(layer, nn.Conv2d):
+                idx_list.append(idx)
+
+        # log weights of last middle layer filters 
+        for i in range(channel_nr[1]):
+            weights = self.middleLayer[idx_list[-1]].weight[:, i, :, :]
+            grid = make_grid(weights,8)
+            self.logger.experiment.add_image("middle_weights"+str(i), grid, global_step=self.current_epoch, dataformats="HW")
+
+        # log weights of end layer   
+        for i in range(channel_nr[1]):
+            weights = self.endLayer[0].weight[:, i, :, :]
+            grid = make_grid(weights,8)
+            self.logger.experiment.add_image("end_weights"+str(i), grid, global_step=self.current_epoch, dataformats="HW")
+
     def show_activations(self, x):
         if x is not None:
             # logging reference input image
@@ -158,13 +183,13 @@ class CNN_AICT(pl.LightningModule):
 
             # logging start layer activations       
             out = self.startLayer(x)
-            grid = make_grid(out,8)
+            grid = make_grid(out[0,:,:,:],8)
 
             self.logger.experiment.add_image("startLayer", grid, self.current_epoch,dataformats="HW")
             
             # logging middle layer activations     
             out = self.middleLayer(out)
-            grid = make_grid(out,8)
+            grid = make_grid(out[0,:,:,:],8)
             self.logger.experiment.add_image("middleLayer", grid, self.current_epoch,dataformats="HW")
 
             # logging end layer activations    
@@ -187,12 +212,19 @@ class CNN_AICT(pl.LightningModule):
 
     def training_epoch_end(self, outputs) -> None:
         self.show_activations(self.ref_img[0].type_as(outputs[0]["preds"]))
+
+        # for all reference images plot model prediction after epoch
         for idx in range(self.ref_img[0].shape[0]):
             pred = self.ref_img[0][idx, :, :, :]
             gt = self.ref_img[1][idx, :, :, :]
             self.show_pred_gt(pred.type_as(outputs[0]["preds"]),
                             gt.type_as(outputs[0]["preds"]), 
                             name="ref_img_"+str(idx))
+        
+        # plot model filter weights after epoch
+        self.show_weights()
+
+        
         
 
     def configure_optimizers(self):
