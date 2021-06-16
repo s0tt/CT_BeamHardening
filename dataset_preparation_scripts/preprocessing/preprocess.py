@@ -18,10 +18,7 @@ def ffc(img_ct, img_white):
 
     # flat-field-correction (ffc)
     img_new = ((img_ct - black) / (white-black))
-
-    # cut small values
-    img_new = np.maximum((1/60000), img_new)
-
+    
     return img_new
 
 
