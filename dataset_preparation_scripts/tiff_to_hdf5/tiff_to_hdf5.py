@@ -106,6 +106,9 @@ def preprocess(img):
    else:
       print("Warning: White file not provided, FFC transform not executed")
 
+   # cut small values
+   img = np.maximum((1/60000), img)
+   
    img = conv_attenuation(img)
    return img
 
