@@ -19,13 +19,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
-    parser.add_argument("--file-noisy-indexes", "-nf", required=True,
+    parser.add_argument("--file-noisy-indexes", "-nf", required=False,
                         help="Path to the json file that contains the noisy indexes")
     parser.add_argument("--nr_workers", "-w", required=False, default=2,
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
                         help="directory where training artefacts are saved")
-    parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=False, 
+    parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None, 
                         help="Parameter to activate/ deactive the removement of noisy slices")
     parser = pl.Trainer.add_argparse_args(parser)
 
@@ -44,9 +44,11 @@ def main():
     val_split = 0.2
     noise_removal_threshold = 2.5
     dataset_paths = parse_dataset_paths(args.file_in)
-    add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
-    update_noisy_indexes(num_pixel, dataset_stride, dataset_paths,
-                args.file_noisy_indexes, threshold=noise_removal_threshold)
+    if args.remove_noisy_slices:
+        print("Calculate and remove noisy indices")
+        add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
+        update_noisy_indexes(num_pixel, dataset_stride, dataset_paths,
+                    args.file_noisy_indexes, threshold=noise_removal_threshold)
     
     number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
     number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
@@ -65,12 +67,12 @@ def main():
         mode='min',
     )
 
-    # train_loss_callback = ModelCheckpoint(
-    #     monitor='train_loss',
-    #     dirpath=path_log,
-    #     filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
-    #     mode='min',
-    # )
+    train_loss_callback = ModelCheckpoint(
+        monitor='train_loss',
+        dirpath=path_log,
+        filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
+        mode='min',
+    )
 
     # train model
     trainer = pl.Trainer.from_argparse_args(
@@ -78,7 +80,7 @@ def main():
         logger=tb_logger,
         log_every_n_steps = 10,
         accelerator=accelerator_type,
-        callbacks=[val_loss_callback],
+        callbacks=[train_loss_callback, val_loss_callback],
         
         )
 

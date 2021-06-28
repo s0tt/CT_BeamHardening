@@ -101,13 +101,14 @@ class CNN_AICT(pl.LightningModule):
         loss = F.mse_loss(residual, y_2)
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
-    def train_step_end(self, outputs):
+    def training_step_end(self, outputs):
         metric_vals = self.train_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
             'train_loss': outputs["loss"],
             'train_psnr': metric_vals["PSNR"],
             'train_mean_abs_err': metric_vals["MeanAbsoluteError"]
         })
+        return {'loss': outputs["loss"], 'preds': outputs["preds"][0]}
 
     def validation_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -128,6 +129,7 @@ class CNN_AICT(pl.LightningModule):
             'val_psnr': metric_vals["PSNR"],
             'val_mean_abs_err': metric_vals["MeanAbsoluteError"]
         })
+        return {'loss': outputs["loss"], 'preds': outputs["preds"][0]}
 
     def test_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -149,6 +151,7 @@ class CNN_AICT(pl.LightningModule):
             'test_psnr': metric_vals["PSNR"],
             'test_mean_abs_err': metric_vals["MeanAbsoluteError"]
         })
+        return {'loss': outputs["loss"], 'preds': outputs["preds"][0]}
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
