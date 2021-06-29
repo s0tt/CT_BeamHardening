@@ -15,12 +15,6 @@
         "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/balls_bh/mono/volume_transposed_and_cutted_fc1.hdf5", 
         "name": "ball_bh"
         
-    },
-    {
-        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/poly/volume.hdf5",
-        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/mono/volume.hdf5", 
-        "name": "grating_holder"
-        
     }
     ]
 }
