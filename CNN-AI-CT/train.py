@@ -27,6 +27,8 @@ def main():
                         help="directory where training artefacts are saved")
     parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None, 
                         help="Parameter to activate/ deactive the removement of noisy slices")
+    parser.add_argument("--batch-size", "-bs", required=True, default=16, 
+                        help="Batch size")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -37,7 +39,7 @@ def main():
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
     accelerator_type = args.accelerator
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
-    batch_size = 16
+    batch_size = args.batch_size
     dataset_stride = 128 
     num_pixel = 256 
     test_split = 0.1
@@ -80,8 +82,7 @@ def main():
         logger=tb_logger,
         log_every_n_steps = 10,
         accelerator=accelerator_type,
-        callbacks=[train_loss_callback, val_loss_callback],
-        
+        callbacks=[train_loss_callback, val_loss_callback]
         )
 
     # TODO: Add Command Line Interface (CLI)
