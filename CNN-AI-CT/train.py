@@ -3,6 +3,8 @@ import numpy as np
 import argparse
 import torch
 import os
+import json
+import datetime
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -32,6 +34,10 @@ def main():
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
+
+    time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
+    with open(args.dir + time_str +"_train_args.json", "w+") as f: 
+        json.dump(args.__dict__, f, indent= 4)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
