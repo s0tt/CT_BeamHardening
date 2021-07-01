@@ -39,7 +39,7 @@ def main():
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
     accelerator_type = args.accelerator
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
-    batch_size = args.batch_size
+    batch_size = int(args.batch_size)
     dataset_stride = 128 
     num_pixel = 256 
     test_split = 0.1
