@@ -2,3 +2,4 @@ lightning_logs
 .vscode
 user_specific
 logs
+CNN-AI-CT/__pycache__
