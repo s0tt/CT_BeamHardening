@@ -5,6 +5,7 @@ import torch
 import os
 import json
 import datetime
+import subprocess
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -16,6 +17,12 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
+def get_git_revision_short_hash():
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+    except:
+        git_hash = "UNKNOWN"
+    return git_hash
 
 def main():
     parser = argparse.ArgumentParser()
@@ -36,8 +43,12 @@ def main():
     args = parser.parse_args()
 
     time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    with open(args.dir + time_str +"_train_args.json", "w+") as f: 
-        json.dump(args.__dict__, f, indent= 4)
+    with open(args.dir + time_str +"_train_args.json", "w+") as f:
+        hash_id = get_git_revision_short_hash()
+        trainDict = {}
+        trainDict["Git ID"] = str(hash_id)
+        trainDict["Args"] = args.__dict__
+        json.dump(trainDict, f, indent= 4)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
