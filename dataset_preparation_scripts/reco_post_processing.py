@@ -235,11 +235,11 @@ def main():
     parser.add_argument("--file-path-out-poly", "-op", required=True, type=str,
                         help="absolut path of output hdf5 file")
 
-    parser.add_argument("--transpose", "-t", required=False, type=bool, default=True,
-                        help="Apply tranpose before cut")
+    parser.add_argument("--not-transpose", "-nt", required=False, action="store_true", default=False,
+                        help="If argument is given (-t): NOT perform transpose")
 
-    parser.add_argument("--remove-initial-volumes", "-ri", required=False, type=bool, default=True,
-                        help="Remove the initial volumes")
+    parser.add_argument("--not-remove-initial-volumes", "-nri", required=False, action="store_true", default=False,
+                        help="If argument is given (-nri): NOT remove the initial volume")
 
     parser.add_argument("--mean-value-factor", "-fc", required=False, default=1, type=float,
                         help="""The factor is multiplied with the mean_grey_value. Slices are 
@@ -248,8 +248,15 @@ def main():
     args = parser.parse_args()
     print("Running with args: ", args)
 
-    if args.transpose:
+    if args.not_transpose:
+        print("Not transpose path")
+        cut_volume(args.file_path_in_poly,
+                args.file_path_in_mono, args.file_path_out_poly,
+                args.file_path_out_mono, args.mean_value_factor, 
+                remove_initial=False) # remove initial volumes later after metadata written
 
+    else:
+        print("Transpose path")
         file_path_out_tranpose_poly = args.file_path_in_poly.split(
             ".hdf5")[0] + "transpose_step_poly.hdf5"
         file_path_out_tranpose_mono = args.file_path_in_mono.split(
@@ -264,18 +271,12 @@ def main():
         cut_volume(file_path_out_tranpose_poly,
                    file_path_out_tranpose_mono, args.file_path_out_poly,
                    args.file_path_out_mono, args.mean_value_factor,
-                   remove_initial=args.remove_initial_volumes)
-
-    else:
-        cut_volume(args.file_path_in_poly,
-                   args.file_path_in_mono, args.file_path_out_poly,
-                   args.file_path_out_mono, args.mean_value_factor, 
-                   remove_initial= False) # remove initial volumes later after metadata written
+                   remove_initial=~args.not_remove_initial_volumes)
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
 
-    if (~args.transpose) and args.remove_initial_volumes:
+    if args.not_transpose and (~args.not_remove_initial_volumes):
         os.remove(args.file_path_in_mono)
         os.remove(args.file_path_in_poly)
 
