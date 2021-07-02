@@ -184,7 +184,8 @@ def add_headers_and_metadata(path_old: str, path_new: str):
 
 
 def cut_volume(path_in_poly: str, path_in_mono: str,
-               path_out_poly: str, path_out_mono: str, factor: float):
+               path_out_poly: str, path_out_mono: str, factor: float, 
+               remove_initial=True):
     """
         Removes slices with to much air from all 
         6 edge planes of the cuboid. path_in <=> path_out 
@@ -198,6 +199,8 @@ def cut_volume(path_in_poly: str, path_in_mono: str,
     name_new_1_poly = name_old_poly+"_dim_1_reduced.hdf5"
 
     cuts_x = cut_air_slices_by_axis(0, path_in_poly, name_new_0_poly, factor)
+    if remove_initial:
+        os.remove(path_in_poly)
     cuts_y = cut_air_slices_by_axis(
         1, name_new_0_poly, name_new_1_poly, factor)
     os.remove(name_new_0_poly)
@@ -210,6 +213,8 @@ def cut_volume(path_in_poly: str, path_in_mono: str,
     name_new_1_mono = name_old_mono+"_dim_1_reduced.hdf5"
 
     cut_volume_by_axis(0, cuts_x, path_in_mono, name_new_0_mono)
+    if remove_initial:
+        os.remove(path_in_mono)
     cut_volume_by_axis(1, cuts_y, name_new_0_mono, name_new_1_mono)
     os.remove(name_new_0_mono)
     cut_volume_by_axis(2, cuts_z, name_new_1_mono, path_out_mono)
@@ -254,21 +259,20 @@ def main():
         trans_hdf5_incremental(args.file_path_in_poly,
                                file_path_out_tranpose_poly)
 
+       
         cut_volume(file_path_out_tranpose_poly,
                    file_path_out_tranpose_mono, args.file_path_out_poly,
-                   args.file_path_out_mono, args.mean_value_factor)
+                   args.file_path_out_mono, args.mean_value_factor,
+                   remove_initial=args.remove_initial_volumes)
 
     else:
         cut_volume(args.file_path_in_poly,
                    args.file_path_in_mono, args.file_path_out_poly,
-                   args.file_path_out_mono, args.mean_value_factor)
+                   args.file_path_out_mono, args.mean_value_factor, 
+                   remove_initial=args.remove_initial_volumes)
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
-
-    if args.remove_initial_volumes:
-        os.remove(args.file_path_in_mono)
-        os.remove(args.file_path_in_poly)
 
 
 if __name__ == "__main__":
