@@ -198,7 +198,6 @@ def cut_volume(path_in_poly: str, path_in_mono: str,
     name_new_1_poly = name_old_poly+"_dim_1_reduced.hdf5"
 
     cuts_x = cut_air_slices_by_axis(0, path_in_poly, name_new_0_poly, factor)
-    os.remove(path_in_poly)
     cuts_y = cut_air_slices_by_axis(
         1, name_new_0_poly, name_new_1_poly, factor)
     os.remove(name_new_0_poly)
@@ -211,7 +210,6 @@ def cut_volume(path_in_poly: str, path_in_mono: str,
     name_new_1_mono = name_old_mono+"_dim_1_reduced.hdf5"
 
     cut_volume_by_axis(0, cuts_x, path_in_mono, name_new_0_mono)
-    os.remove(path_in_mono)
     cut_volume_by_axis(1, cuts_y, name_new_0_mono, name_new_1_mono)
     os.remove(name_new_0_mono)
     cut_volume_by_axis(2, cuts_z, name_new_1_mono, path_out_mono)
@@ -235,6 +233,9 @@ def main():
     parser.add_argument("--transpose", "-t", required=False, type=bool, default=True,
                         help="Apply tranpose before cut")
 
+    parser.add_argument("--remove-initial-volumes", "-ri", required=False, type=bool, default=False,
+                        help="Remove the initial volumes")
+
     parser.add_argument("--mean-value-factor", "-fc", required=False, default=1, type=float,
                         help="""The factor is multiplied with the mean_grey_value. Slices are 
                             then cutted if the mean slice grey value is lower as this product.""")
@@ -256,14 +257,18 @@ def main():
         cut_volume(file_path_out_tranpose_poly,
                    file_path_out_tranpose_mono, args.file_path_out_poly,
                    args.file_path_out_mono, args.mean_value_factor)
-    else:
 
+    else:
         cut_volume(args.file_path_in_poly,
                    args.file_path_in_mono, args.file_path_out_poly,
                    args.file_path_out_mono, args.mean_value_factor)
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
+
+    if args.remove_initial_volumes:
+        os.remove(args.file_path_in_mono)
+        os.remove(args.file_path_in_poly)
 
 
 if __name__ == "__main__":
