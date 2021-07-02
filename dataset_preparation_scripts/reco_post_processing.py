@@ -183,7 +183,8 @@ def add_headers_and_metadata(path_old: str, path_new: str):
                     f_in.copy(key, group_id, group_path+key)
 
 
-def cut_volume(path_in_poly: str, path_in_mono: str, factor: float):
+def cut_volume(path_in_poly: str, path_in_mono: str,
+               path_out_poly: str, path_out_mono: str, factor: float):
     """
         Removes slices with to much air from all 
         6 edge planes of the cuboid. path_in <=> path_out 
@@ -201,7 +202,7 @@ def cut_volume(path_in_poly: str, path_in_mono: str, factor: float):
     cuts_y = cut_air_slices_by_axis(
         1, name_new_0_poly, name_new_1_poly, factor)
     os.remove(name_new_0_poly)
-    cuts_z = cut_air_slices_by_axis(2, name_new_1_poly, path_in_poly, factor)
+    cuts_z = cut_air_slices_by_axis(2, name_new_1_poly, path_out_poly, factor)
     os.remove(name_new_1_poly)
 
     # Mono part
@@ -213,7 +214,7 @@ def cut_volume(path_in_poly: str, path_in_mono: str, factor: float):
     os.remove(path_in_mono)
     cut_volume_by_axis(1, cuts_y, name_new_0_mono, name_new_1_mono)
     os.remove(name_new_0_mono)
-    cut_volume_by_axis(2, cuts_z, name_new_1_mono, path_in_mono)
+    cut_volume_by_axis(2, cuts_z, name_new_1_mono, path_out_mono)
     os.remove(name_new_1_mono)
 
 
@@ -241,11 +242,25 @@ def main():
     args = parser.parse_args()
 
     if args.transpose:
-        trans_hdf5_incremental(args.file_path_in_mono, args.file_path_out_mono)
-        trans_hdf5_incremental(args.file_path_in_poly, args.file_path_out_poly)
 
-    cut_volume(args.file_path_out_poly,
-               args.file_path_out_mono, args.mean_value_factor)
+        file_path_out_tranpose_poly = args.file_path_in_poly.split(
+            ".hdf5")[0] + "transpose_step_poly.hdf5"
+        file_path_out_tranpose_mono = args.file_path_in_mono.split(
+            ".hdf5")[0] + "transpose_step_mono.hdf5"
+
+        trans_hdf5_incremental(args.file_path_in_mono,
+                               file_path_out_tranpose_mono)
+        trans_hdf5_incremental(args.file_path_in_poly,
+                               file_path_out_tranpose_poly)
+
+        cut_volume(file_path_out_tranpose_poly,
+                   file_path_out_tranpose_mono, args.file_path_out_poly,
+                   args.file_path_out_mono, args.mean_value_factor)
+    else:
+
+        cut_volume(args.file_path_in_poly,
+                   args.file_path_in_mono, args.file_path_out_poly,
+                   args.file_path_out_mono, args.mean_value_factor)
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
