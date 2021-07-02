@@ -238,7 +238,7 @@ def main():
     parser.add_argument("--transpose", "-t", required=False, type=bool, default=True,
                         help="Apply tranpose before cut")
 
-    parser.add_argument("--remove-initial-volumes", "-ri", required=False, type=bool, default=False,
+    parser.add_argument("--remove-initial-volumes", "-ri", required=False, type=bool, default=True,
                         help="Remove the initial volumes")
 
     parser.add_argument("--mean-value-factor", "-fc", required=False, default=1, type=float,
@@ -269,10 +269,14 @@ def main():
         cut_volume(args.file_path_in_poly,
                    args.file_path_in_mono, args.file_path_out_poly,
                    args.file_path_out_mono, args.mean_value_factor, 
-                   remove_initial=args.remove_initial_volumes)
+                   remove_initial= False) # remove initial volumes later after metadata written
 
     add_headers_and_metadata(args.file_path_in_mono, args.file_path_out_mono)
     add_headers_and_metadata(args.file_path_in_poly, args.file_path_out_poly)
+
+    if (~args.transpose) and args.remove_initial_volumes:
+        os.remove(args.file_path_in_mono)
+        os.remove(args.file_path_in_poly)
 
 
 if __name__ == "__main__":
