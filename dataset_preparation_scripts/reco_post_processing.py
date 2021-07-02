@@ -246,6 +246,7 @@ def main():
                             then cutted if the mean slice grey value is lower as this product.""")
 
     args = parser.parse_args()
+    print("Running with args: ", args)
 
     if args.transpose:
 
