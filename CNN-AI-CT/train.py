@@ -17,12 +17,18 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
-def get_git_revision_short_hash():
+def get_git_revision_short_hash(path):
     try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=path).decode('ascii').strip()
+        git_branch = subprocess.check_output(['git', 'branch', '-vv'], cwd=path).decode('ascii').strip()
+        for str_branch in git_branch.split('\n'):
+            if str_branch.find('*') != -1:
+                git_branch = str_branch
+                break
     except:
         git_hash = "UNKNOWN"
-    return git_hash
+        git_branch = "UNKNOWN"
+    return git_hash, git_branch
 
 def main():
     parser = argparse.ArgumentParser()
@@ -44,18 +50,22 @@ def main():
 
     time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
     with open(args.dir + time_str +"_train_args.json", "w+") as f:
-        hash_id = get_git_revision_short_hash()
+        repo_path = os.path.split(args.file_in)[0]
+        hash_id, branch = get_git_revision_short_hash(repo_path)
         trainDict = {}
         trainDict["Git ID"] = str(hash_id)
+        trainDict["Git Branch"] = str(branch)
+        trainDict["Repo Dir"] = str(repo_path)
         trainDict["Args"] = args.__dict__
         json.dump(trainDict, f, indent= 4)
+        f.close()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
-    batch_size = int(args.batch_size)
+    batch_size = int(args.batch_size) if args.batch_size != None else None
     dataset_stride = 128 
     num_pixel = 256 
     test_split = 0.1
@@ -96,7 +106,7 @@ def main():
     trainer = pl.Trainer.from_argparse_args(
         parser, 
         logger=tb_logger,
-        log_every_n_steps = 10,
+        log_every_n_steps = 10
         callbacks=[train_loss_callback, val_loss_callback]
         )
 
