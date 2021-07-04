@@ -54,7 +54,6 @@ def main():
     # Accelerator
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
-    accelerator_type = args.accelerator
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
     batch_size = int(args.batch_size)
     dataset_stride = 128 
@@ -98,7 +97,6 @@ def main():
         parser, 
         logger=tb_logger,
         log_every_n_steps = 10,
-        accelerator=accelerator_type,
         callbacks=[train_loss_callback, val_loss_callback]
         )
 

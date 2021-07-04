@@ -2,8 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torchmetrics.regression import PSNR, MeanAbsoluteError
-from torchmetrics import MetricCollection
 from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
@@ -11,9 +9,6 @@ class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None):
         super().__init__()
         self.ref_img = ref_img
-        self.train_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
-        self.val_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
-        self.test_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
 
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
@@ -102,13 +97,10 @@ class CNN_AICT(pl.LightningModule):
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def training_step_end(self, outputs):
-        metric_vals = self.train_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
-            'train_loss': outputs["loss"],
-            'train_psnr': metric_vals["PSNR"],
-            'train_mean_abs_err': metric_vals["MeanAbsoluteError"]
+            'train_loss': outputs["loss"]
         })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
 
     def validation_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -123,13 +115,10 @@ class CNN_AICT(pl.LightningModule):
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def validation_step_end(self, outputs):
-        metric_vals = self.val_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
-            'val_loss': outputs["loss"],
-            'val_psnr': metric_vals["PSNR"],
-            'val_mean_abs_err': metric_vals["MeanAbsoluteError"]
+            'val_loss': outputs["loss"]
         })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
 
     def test_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -145,13 +134,10 @@ class CNN_AICT(pl.LightningModule):
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def test_step_end(self, outputs):
-        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
         self.log_dict({
-            'test_loss': outputs["loss"],
-            'test_psnr': metric_vals["PSNR"],
-            'test_mean_abs_err': metric_vals["MeanAbsoluteError"]
+            'test_loss': outputs["loss"]
         })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
