@@ -106,7 +106,7 @@ def main():
     trainer = pl.Trainer.from_argparse_args(
         parser, 
         logger=tb_logger,
-        log_every_n_steps = 10
+        log_every_n_steps = 10,
         callbacks=[train_loss_callback, val_loss_callback]
         )
 
