@@ -94,13 +94,11 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
+        self.log_dict({
+            'train_loss': loss
+        })        
         return {'loss': loss, 'preds': residual, 'target': y_2}
 
-    def training_step_end(self, outputs):
-        self.log_dict({
-            'train_loss': outputs["loss"]
-        })
-        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
 
     def validation_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -112,13 +110,10 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
-        return {'loss': loss, 'preds': residual, 'target': y_2}
-
-    def validation_step_end(self, outputs):
         self.log_dict({
-            'val_loss': outputs["loss"]
+            'val_loss': loss
         })
-        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
+        return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def test_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -130,14 +125,10 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
-        
-        return {'loss': loss, 'preds': residual, 'target': y_2}
-
-    def test_step_end(self, outputs):
         self.log_dict({
-            'test_loss': outputs["loss"]
-        })
-        return {'loss': outputs["loss"].mean(), 'preds': outputs["preds"][0]}
+            'test_loss': loss
+        })        
+        return {'loss': loss, 'preds': residual, 'target': y_2}
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
