@@ -235,17 +235,6 @@ class CtVolumeData(pl.LightningDataModule):
         self.dataset_train, self.dataset_val, self.dataset_test = random_split(dataset, [split_train, split_val, split_test])
 
 
-    def setup(self):
-        return 0
-        # """Split the train and valid dataset"""
-        # dataset = ConcatDataset([VolumeDataset(path[0], path[1], self.num_pixel, self.dataset_stride) for path in self.paths])
-        # self.dataset_size = len(dataset)
-        # split_test = int(np.round(self.test_split * self.dataset_size))
-        # split_val = int(np.round(self.val_split * self.dataset_size))
-        # split_train = int(self.dataset_size - split_test - split_val)
-
-        # self.dataset_train, self.dataset_val, self.dataset_test = random_split(dataset, [split_train, split_val, split_test])
-
     def train_dataloader(self):
         #self.train_sampler = None
         #if self.accelerator == ("ddp" or "ddp2" or "ddp_spawn"):
@@ -275,7 +264,7 @@ class CtVolumeData(pl.LightningDataModule):
         val_loader = DataLoader(
                 self.dataset_val,
                 batch_size=self.batch_size,
-                shuffle=True,
+                shuffle=False,
                 num_workers=self.num_workers,
                 pin_memory=True, # loads them directly in cuda pinned memory 
                 drop_last=True,# drop the last incomplete batch
@@ -297,7 +286,7 @@ class CtVolumeData(pl.LightningDataModule):
         test_loader = DataLoader(
                         self.dataset_test,
                         batch_size=self.batch_size,
-                        shuffle=True,
+                        shuffle=False,
                         num_workers=self.num_workers,
                         pin_memory=True, # loads them directly in cuda pinned memory 
                         drop_last=True,# drop the last incomplete batch
