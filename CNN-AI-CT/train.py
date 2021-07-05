@@ -12,6 +12,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.accelerators import accelerator
 from torch.nn.modules.activation import Threshold
+from pytorch_lightning.plugins import DDPPlugin
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
@@ -107,7 +108,8 @@ def main():
         parser, 
         logger=tb_logger,
         log_every_n_steps = 10,
-        callbacks=[train_loss_callback, val_loss_callback]
+        callbacks=[train_loss_callback, val_loss_callback],
+        plugins=DDPPlugin(find_unused_parameters=False)
         )
 
     # TODO: Add Command Line Interface (CLI)
