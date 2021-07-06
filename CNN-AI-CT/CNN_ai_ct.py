@@ -66,7 +66,7 @@ class CNN_AICT(pl.LightningModule):
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #15
             nn.BatchNorm2d(64),
-            nn.ReLU(),            
+            nn.ReLU(),
         )
 
 
@@ -101,15 +101,9 @@ class CNN_AICT(pl.LightningModule):
 
         loss = F.mse_loss(residual, y_2)
 
-        metric_vals = self.train_metrics(residual, y_2)
-
-        self.log_dict({
-            'train_loss': loss,
-            'train_psnr': metric_vals["train_PSNR"],
-            'train_mean_abs_err': metric_vals["train_MeanAbsoluteError"],
-            
-        })
-        return {'loss': loss}
+        self.log_dict(self.train_metrics(residual, y_2))
+        self.log('train_loss',loss, sync_dist=True)
+        return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -121,15 +115,8 @@ class CNN_AICT(pl.LightningModule):
 
         loss = F.mse_loss(residual, y_2)
 
-        metric_vals = self.val_metrics(residual, y_2)
-
-        self.log_dict({
-            'val_loss': loss,
-            'val_psnr': metric_vals["val_PSNR"],
-            'val_mean_abs_err': metric_vals["val_MeanAbsoluteError"],
-            
-        })
-        return {'loss': loss}
+        self.log_dict(self.val_metrics(residual, y_2))
+        self.log('val_loss',loss, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -140,15 +127,8 @@ class CNN_AICT(pl.LightningModule):
 
         loss = F.mse_loss(residual, y_2)
 
-        metric_vals = self.test_metrics(residual, y)
-
-        self.log_dict({
-            'test_loss': loss,
-            'test_psnr': metric_vals["test_PSNR"],
-            'test_mean_abs_err': metric_vals["test_MeanAbsoluteError"],
-            
-        })
-        return {'loss': loss}
+        self.log_dict(self.test_metrics(residual, y_2))
+        self.log('test_loss',loss, sync_dist=True)
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
@@ -211,14 +191,14 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img[0])
+        self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
 
         # for all reference images plot model prediction after epoch
         for idx in range(self.ref_img[0].shape[0]):
             pred = self.ref_img[0][idx, :, :, :]
             gt = self.ref_img[1][idx, :, :, :]
-            self.show_pred_gt(pred,
-                            gt, 
+            self.show_pred_gt(pred.type_as(outputs[0]["loss"]),
+                            gt.type_as(outputs[0]["loss"]), 
                             name="ref_img_"+str(idx))
         
         # plot model filter weights after epoch
