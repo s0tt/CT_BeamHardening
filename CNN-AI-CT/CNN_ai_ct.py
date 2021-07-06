@@ -97,7 +97,7 @@ class CNN_AICT(pl.LightningModule):
         self.log_dict({
             'train_loss': loss
         })        
-        return {'loss': loss, 'preds': residual, 'target': y_2}
+        return {'loss': loss}
 
 
     def validation_step(self, batch, batch_idx):
@@ -113,7 +113,7 @@ class CNN_AICT(pl.LightningModule):
         self.log_dict({
             'val_loss': loss
         })
-        return {'loss': loss, 'preds': residual, 'target': y_2}
+        return {'loss': loss}
 
     def test_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -128,7 +128,7 @@ class CNN_AICT(pl.LightningModule):
         self.log_dict({
             'test_loss': loss
         })        
-        return {'loss': loss, 'preds': residual, 'target': y_2}
+        return {'loss': loss}
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
