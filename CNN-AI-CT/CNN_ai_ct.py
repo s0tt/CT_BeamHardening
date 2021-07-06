@@ -2,6 +2,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torchmetrics.regression import PSNR, MeanAbsoluteError
+from torchmetrics import MetricCollection
 from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
@@ -9,6 +11,10 @@ class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None):
         super().__init__()
         self.ref_img = ref_img
+        metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        self.train_metrics = metrics.clone(prefix='train_')
+        self.val_metrics = metrics.clone(prefix='val_')
+        self.test_metrics = metrics.clone(prefix='test_')
 
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
@@ -94,15 +100,19 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
+
+        metric_vals = self.train_metrics(residual, y_2)
+
         self.log_dict({
-            'train_loss': loss
-        })        
+            'train_loss': loss,
+            'train_psnr': metric_vals["train_PSNR"],
+            'train_mean_abs_err': metric_vals["train_MeanAbsoluteError"],
+            
+        })
         return {'loss': loss}
 
 
     def validation_step(self, batch, batch_idx):
-        # training_step defined the train loop.
-        # It is independent of forward
         x, y = batch
         residual = self(x)
 
@@ -110,14 +120,18 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
+
+        metric_vals = self.val_metrics(residual, y_2)
+
         self.log_dict({
-            'val_loss': loss
+            'val_loss': loss,
+            'val_psnr': metric_vals["val_PSNR"],
+            'val_mean_abs_err': metric_vals["val_MeanAbsoluteError"],
+            
         })
         return {'loss': loss}
 
     def test_step(self, batch, batch_idx):
-        # training_step defined the train loop.
-        # It is independent of forward
         x, y = batch
         residual = self(x)
 
@@ -125,9 +139,15 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
+
+        metric_vals = self.test_metrics(residual, y)
+
         self.log_dict({
-            'test_loss': loss
-        })        
+            'test_loss': loss,
+            'test_psnr': metric_vals["test_PSNR"],
+            'test_mean_abs_err': metric_vals["test_MeanAbsoluteError"],
+            
+        })
         return {'loss': loss}
 
     def show_weights(self, channel_nr=[5, 64, 64]):
@@ -191,14 +211,14 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img[0].type_as(outputs[0]["preds"]))
+        self.show_activations(self.ref_img[0])
 
         # for all reference images plot model prediction after epoch
         for idx in range(self.ref_img[0].shape[0]):
             pred = self.ref_img[0][idx, :, :, :]
             gt = self.ref_img[1][idx, :, :, :]
-            self.show_pred_gt(pred.type_as(outputs[0]["preds"]),
-                            gt.type_as(outputs[0]["preds"]), 
+            self.show_pred_gt(pred,
+                            gt, 
                             name="ref_img_"+str(idx))
         
         # plot model filter weights after epoch
