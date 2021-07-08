@@ -15,6 +15,24 @@
         "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/balls_bh/mono/volume_transposed_and_cutted_fc1.hdf5", 
         "name": "ball_bh"
         
+    },
+    {
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/poly/volume_transposed_and_cutted_fc1.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/mono/volume_transposed_and_cutted_fc1.hdf5", 
+        "name": "zuendkerze"
+        
+    },
+    {
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/poly/volume_transposed_and_cutted_2_fc0_3.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/mono/volume_transposed_and_cutted_2_fc0_3.hdf5", 
+        "name": "grating_holder"
+        
+    },
+    {
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/flute/poly/volume_transposed_and_cutted_fc1_cont.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/flute/mono/volume_transposed_and_cutted_fc1_cont.hdf5", 
+        "name": "flute"
+        
     }
     ]
 }
