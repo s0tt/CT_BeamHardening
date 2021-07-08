@@ -11,9 +11,10 @@ class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None):
         super().__init__()
         self.ref_img = ref_img
-        self.train_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
-        self.val_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
-        self.test_metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
+        self.train_metrics = metrics.clone(prefix='train_')
+        self.val_metrics = metrics.clone(prefix='val_')
+        self.test_metrics = metrics.clone(prefix='test_')
 
         self.startLayer = nn.Sequential(
             nn.Conv2d(5, 64, 3, padding=1, padding_mode="reflect"),
@@ -65,7 +66,7 @@ class CNN_AICT(pl.LightningModule):
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"), #15
             nn.BatchNorm2d(64),
-            nn.ReLU(),            
+            nn.ReLU(),
         )
 
 
@@ -99,20 +100,13 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
-        return {'loss': loss, 'preds': residual, 'target': y_2}
 
-    def training_step_end(self, outputs):
-        metric_vals = self.train_metrics(outputs["preds"], outputs["target"])
-        self.log_dict({
-            'train_loss': outputs["loss"],
-            'train_psnr': metric_vals["PSNR"],
-            'train_mean_abs_err': metric_vals["MeanAbsoluteError"]
-        })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        self.log_dict(self.train_metrics(residual, y_2))
+        self.log('train_loss',loss, sync_dist=True)
+        return loss
+
 
     def validation_step(self, batch, batch_idx):
-        # training_step defined the train loop.
-        # It is independent of forward
         x, y = batch
         residual = self(x)
 
@@ -120,20 +114,11 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
-        return {'loss': loss, 'preds': residual, 'target': y_2}
 
-    def validation_step_end(self, outputs):
-        metric_vals = self.val_metrics(outputs["preds"], outputs["target"])
-        self.log_dict({
-            'val_loss': outputs["loss"],
-            'val_psnr': metric_vals["PSNR"],
-            'val_mean_abs_err': metric_vals["MeanAbsoluteError"]
-        })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        self.log_dict(self.val_metrics(residual, y_2))
+        self.log('val_loss',loss, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
-        # training_step defined the train loop.
-        # It is independent of forward
         x, y = batch
         residual = self(x)
 
@@ -141,17 +126,9 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:,2,:,:], dim=1)
 
         loss = F.mse_loss(residual, y_2)
-        
-        return {'loss': loss, 'preds': residual, 'target': y_2}
 
-    def test_step_end(self, outputs):
-        metric_vals = self.test_metrics(outputs["preds"], outputs["target"])
-        self.log_dict({
-            'test_loss': outputs["loss"],
-            'test_psnr': metric_vals["PSNR"],
-            'test_mean_abs_err': metric_vals["MeanAbsoluteError"]
-        })
-        return {'loss': outputs["loss"].sum(), 'preds': outputs["preds"][0]}
+        self.log_dict(self.test_metrics(residual, y_2))
+        self.log('test_loss',loss, sync_dist=True)
 
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
@@ -214,14 +191,14 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img[0].type_as(outputs[0]["preds"]))
+        self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
 
         # for all reference images plot model prediction after epoch
         for idx in range(self.ref_img[0].shape[0]):
             pred = self.ref_img[0][idx, :, :, :]
             gt = self.ref_img[1][idx, :, :, :]
-            self.show_pred_gt(pred.type_as(outputs[0]["preds"]),
-                            gt.type_as(outputs[0]["preds"]), 
+            self.show_pred_gt(pred.type_as(outputs[0]["loss"]),
+                            gt.type_as(outputs[0]["loss"]), 
                             name="ref_img_"+str(idx))
         
         # plot model filter weights after epoch
