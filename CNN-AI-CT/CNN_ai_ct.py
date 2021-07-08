@@ -185,9 +185,8 @@ class CNN_AICT(pl.LightningModule):
         y_2 = torch.unsqueeze(y[:, 2,:,:], dim=1)
         
         y_hat = self(x)
-        residual = x_2-y_hat
 
-        fig = plot_pred_gt(residual, y_2)
+        fig = plot_pred_gt(y_hat, y_2)
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
