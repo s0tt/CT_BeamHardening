@@ -8,9 +8,10 @@ from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
 
-    def __init__(self, ref_img=None):
+    def __init__(self, ref_img=None, plot_test_step=False):
         super().__init__()
         self.ref_img = ref_img
+        self.plot_test_step = plot_test_step
         metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
         self.train_metrics = metrics.clone(prefix='train_')
         self.val_metrics = metrics.clone(prefix='val_')
@@ -130,6 +131,15 @@ class CNN_AICT(pl.LightningModule):
         self.log_dict(self.test_metrics(residual, y_2))
         self.log('test_loss',loss, sync_dist=True)
 
+        if self.plot_test_step:
+            self.show_activations(x.type_as(loss))
+            #plot all test images
+            for idx in range(x.shape[0]):
+                self.show_pred_gt(x[idx,:,:,:],
+                                y[idx,:,:,:],
+                                y_hat_in=residual[idx,:,:,:],
+                                name=("test_img_"+str(idx)))
+
     def show_weights(self, channel_nr=[5, 64, 64]):
         # log start filter weights
         for i in range(channel_nr[0]):
@@ -178,13 +188,16 @@ class CNN_AICT(pl.LightningModule):
             self.logger.experiment.add_figure("endLayer", output_fig, global_step=self.current_epoch)
 
 
-    def show_pred_gt(self, x, y, name="pred_gt"):
+    def show_pred_gt(self, x, y, y_hat_in=None, name="pred_gt"):
         x = torch.unsqueeze(x, dim=0)
         y = torch.unsqueeze(y, dim=0)
         x_2 = torch.unsqueeze(x[:,2,:,:], dim=1)
         y_2 = torch.unsqueeze(y[:, 2,:,:], dim=1)
         
-        y_hat = self(x)
+        if y_hat_in is None:
+            y_hat = self(x)
+        else:
+            y_hat = y_hat_in
 
         fig = plot_pred_gt(x_2, y_hat, y_2)
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
@@ -202,9 +215,6 @@ class CNN_AICT(pl.LightningModule):
         
         # plot model filter weights after epoch
         self.show_weights()
-
-        
-        
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, betas=(0.9, 0.999))
