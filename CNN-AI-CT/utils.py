@@ -1,13 +1,14 @@
 import json
 import h5py
 
-def parse_dataset_paths(ct_data_path) -> list:
+def parse_dataset_paths(ct_data_path, dataset_names) -> list:
     # returns tuple with (poly_path, mono_path, name)
     return_list = []
     f = open(ct_data_path, "r")
     data = json.load(f, encoding="utf-8")
     for entry in data["datasets"]:
-        return_list.append((str(entry["ct"]), str(entry["gt"]), str(entry["name"])))
+        if entry['name'] in dataset_names or "all" in dataset_names: 
+            return_list.append((str(entry["ct"]), str(entry["gt"]), str(entry["name"])))
     f.close()
     return return_list
 

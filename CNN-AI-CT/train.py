@@ -28,6 +28,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
+    parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
+                        help="Names of the datasets of --file-in that should be used for training")
     parser.add_argument("--file-noisy-indexes", "-nf", required=False,
                         help="Path to the json file that contains the noisy indexes")
     parser.add_argument("--nr_workers", "-w", required=False, default=2,
@@ -62,7 +64,7 @@ def main():
     test_split = 0.1
     val_split = 0.2
     noise_removal_threshold = 2.5
-    dataset_paths = parse_dataset_paths(args.file_in)
+    dataset_paths = parse_dataset_paths(args.file_in, args.dataset_names)
     if args.remove_noisy_slices:
         print("Calculate and remove noisy indices")
         add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
