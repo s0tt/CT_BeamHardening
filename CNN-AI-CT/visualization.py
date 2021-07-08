@@ -37,11 +37,11 @@ def make_grid(data,numrows):
         return b
     return c
 
-def plot_pred_gt(pred, gt):
+def plot_pred_gt(x, pred, gt):
     fig = plt.figure(figsize=(16, 9))
 
     grid = ImageGrid(fig, 111,          # as in plt.subplot(111)
-                nrows_ncols=(1,2),
+                nrows_ncols=(1,3),
                 axes_pad=0.15,
                 share_all=True,
                 cbar_location="right",
@@ -49,13 +49,14 @@ def plot_pred_gt(pred, gt):
                 cbar_size="7%",
                 cbar_pad=0.15,
                 )
-
-    grid[0].set_title("Model prediction(residual)")
-    im = grid[0].imshow(np.squeeze(np.array(torch.Tensor.cpu(pred).detach().numpy())), cmap="gray")
-    im = grid[1].imshow(np.squeeze(np.array(torch.Tensor.cpu(gt).detach().numpy())), cmap="gray")
-    grid[1].set_title("Mono (Ground-Truth)")
-    grid[1].cax.colorbar(im)
-    grid[1].cax.toggle_label(True)
+    grid[0].set_title("Input (Poly)")
+    im = grid[0].imshow(np.squeeze(np.array(torch.Tensor.cpu(x).detach().numpy())), cmap="gray")
+    grid[1].set_title("Prediction (Poly-residual)")
+    im = grid[1].imshow(np.squeeze(np.array(torch.Tensor.cpu(pred).detach().numpy())), cmap="gray")
+    im = grid[2].imshow(np.squeeze(np.array(torch.Tensor.cpu(gt).detach().numpy())), cmap="gray")
+    grid[2].set_title("Ground Truth (Mono)")
+    grid[2].cax.colorbar(im)
+    grid[2].cax.toggle_label(True)
     #plt.savefig(name+".png")
     return fig
 

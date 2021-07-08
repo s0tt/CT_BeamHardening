@@ -186,7 +186,7 @@ class CNN_AICT(pl.LightningModule):
         
         y_hat = self(x)
 
-        fig = plot_pred_gt(y_hat, y_2)
+        fig = plot_pred_gt(x_2, y_hat, y_2)
         self.logger.experiment.add_figure(name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
