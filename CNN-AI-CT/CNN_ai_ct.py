@@ -104,7 +104,7 @@ class CNN_AICT(pl.LightningModule):
 
         self.log_dict(self.train_metrics(residual, y_2))
         self.log('train_loss',loss, sync_dist=True)
-        self.logger.experiment.add_scalars("losses", {"test_loss": loss}, global_step=self.global_step)
+        self.logger.experiment.add_scalars("losses", {"train_loss": loss}, global_step=self.global_step)
         return loss
 
     def validation_step(self, batch, batch_idx):
