@@ -1,0 +1,8 @@
+{
+    "datasets": [
+    {
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/cable_holder_chain/poly/volume_transposed_and_cutted_fc5_downsampled.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/cable_holder_chain/mono/volume_transposed_and_cutted_fc5_downsampled.hdf5", 
+        "name": "cable_holder_chain" 
+    }]
+}
