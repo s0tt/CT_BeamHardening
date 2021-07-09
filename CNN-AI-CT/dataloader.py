@@ -24,10 +24,10 @@ class ConcatDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, i):
         for j in range(self.num_datasets):
-            if i < self.len_datasets[j]: 
+            if i < self.len_datasets[j]:
                 return self.datasets[j][i]
-            else: 
-                i-= self.len_datasets[j]
+            else:
+                i -= self.len_datasets[j]
 
     def __len__(self):
         return sum([len(d) for d in self.datasets])
@@ -65,21 +65,21 @@ class VolumeDataset(Dataset):
 
     def __getitem__(self, idx):
         x_index = int((idx)/self.num_samples_per_slice) + 2
-        overlay =  idx % self.num_samples_per_slice
+        overlay = idx % self.num_samples_per_slice
         z_index = int(overlay/self.num_samples_in_y)
         y_index = overlay % self.num_samples_in_y
 
         with h5py.File(self.file_path_bh, 'r') as h5f:
             volume_bh = h5f['Volume']
             sample_bh = volume_bh[x_index-2:x_index+3,
-                            y_index*self.stride: y_index*self.stride + self.num_pixel,
-                            z_index*self.stride: z_index*self.stride + self.num_pixel]
+                                  y_index*self.stride: y_index*self.stride + self.num_pixel,
+                                  z_index*self.stride: z_index*self.stride + self.num_pixel]
 
         with h5py.File(self.file_path_gt, 'r') as h5f:
             volume_gt = h5f['Volume']
             sample_gt = volume_gt[x_index-2:x_index+3,
-                            y_index*self.stride: y_index*self.stride + self.num_pixel,
-                            z_index*self.stride: z_index*self.stride + self.num_pixel]
+                                  y_index*self.stride: y_index*self.stride + self.num_pixel,
+                                  z_index*self.stride: z_index*self.stride + self.num_pixel]
 
         if self.transform:
             sample_gt = self.transform(sample_gt)
@@ -87,7 +87,8 @@ class VolumeDataset(Dataset):
 
         return [sample_bh, sample_gt]
 
-def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, threshold=1): 
+
+def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, threshold=1):
     """
         This function adds the noisy indexes to the noisy_indexes_path file if the noisy indexes
         are not yet known. 
@@ -96,61 +97,61 @@ def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_
         or all noise flags have to set manually to zero 
     """
 
-
-    noise_index_file = open(noisy_indexes_path, "r") 
+    noise_index_file = open(noisy_indexes_path, "r")
     noise_index_data = json.load(noise_index_file, encoding="utf-8")
     noise_index_file.close()
 
-    for dataset_idx, entry in enumerate(noise_index_data["datasets"]): 
+    for dataset_idx, entry in enumerate(noise_index_data["datasets"]):
 
         # Check if dataset was already parsed
-        if not entry["noisy_samples_known"]: 
+        if not entry["noisy_samples_known"]:
             dataset = VolumeDataset(volume_paths[dataset_idx][0],
                                     volume_paths[dataset_idx][1],
                                     num_pixel, dataset_stride)
             indexes_to_remove = []
-            #mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0]) #(Use maybe later)
+            # mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0]) #(Use maybe later)
 
             # iterate over all samples
             for idx in range(len(dataset)):
                 middle_slice = dataset.__getitem__(idx)[0][2, :, :]
-                mean_grey_value_sample = (middle_slice.flatten().sum())/middle_slice.size
+                mean_grey_value_sample = (
+                    middle_slice.flatten().sum())/middle_slice.size
                 # check if sample is just noise
-                if mean_grey_value_sample < threshold: 
-                    indexes_to_remove.append(idx) 
+                if mean_grey_value_sample < threshold:
+                    indexes_to_remove.append(idx)
 
-            
             # add noisy element indexes
             noise_index_data["datasets"][dataset_idx].update({
-                                                "noisy_samples_known": True,
-                                                "nr_samples": len(dataset),
-                                                "nr_noisy_samples": len(indexes_to_remove), 
-                                                "noisy_indexes": indexes_to_remove,
-                                                })
+                "noisy_samples_known": True,
+                "nr_samples": len(dataset),
+                "nr_noisy_samples": len(indexes_to_remove),
+                "noisy_indexes": indexes_to_remove,
+            })
 
-    
-    with open(noisy_indexes_path, "w") as noise_index_file:  
+    with open(noisy_indexes_path, "w") as noise_index_file:
         json.dump(noise_index_data, noise_index_file, indent=4)
 
 
 def get_noisy_indexes(noisy_indexes_path: str) -> np.ndarray:
 
     noisy_indexes = np.array([], dtype=int)
-    noise_index_file = open(noisy_indexes_path, "r+") 
+    noise_index_file = open(noisy_indexes_path, "r+")
     noise_index_data = json.load(noise_index_file, encoding="utf-8")
 
     offset = 0
-    for entry in noise_index_data["datasets"]: 
-                # check if sample is just noise
-        noisy_indexes = np.concatenate((noisy_indexes, np.array(entry["noisy_indexes"], dtype=int) + offset))
+    for entry in noise_index_data["datasets"]:
+        # check if sample is just noise
+        noisy_indexes = np.concatenate(
+            (noisy_indexes, np.array(entry["noisy_indexes"], dtype=int) + offset))
         offset += entry["nr_samples"]
-    
+
     noise_index_file.close()
 
     return noisy_indexes
 
+
 def custom_random_split(dataset, lengths,
-                 generator, remove_idx: np.array):
+                        generator, remove_idx: np.array):
     r"""
     Randomly split a dataset into non-overlapping new datasets of given lengths.
     Optionally fix the generator for reproducible results, e.g.:
@@ -165,12 +166,15 @@ def custom_random_split(dataset, lengths,
     """
     # Cannot verify that dataset is Sized
     if sum(lengths) != len(dataset):  # type: ignore
-        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+        raise ValueError(
+            "Sum of input lengths does not equal the length of the input dataset!")
 
     indices = randperm(sum(lengths), generator=generator).tolist()
     if remove_idx.size:
-        indices = np.delete(indices, np.flatnonzero(np.isin(indices, remove_idx)))
-    return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
+        indices = np.delete(indices, np.flatnonzero(
+            np.isin(indices, remove_idx)))
+    return [Subset(dataset, indices[offset - length: offset]) for offset, length in zip(_accumulate(lengths), lengths)]
+
 
 class CtVolumeData(pl.LightningDataModule):
     def __init__(
@@ -178,12 +182,12 @@ class CtVolumeData(pl.LightningDataModule):
         paths,
         batch_size: int = 32,
         num_workers: int = 2,
-        dataset_stride: int = 128, 
+        dataset_stride: int = 128,
         num_pixel: int = 256,
-        test_split = 0.3,
-        val_split = 0.2,
-        noisy_indexes = None,
-        manual_test = None
+        test_split=0.3,
+        val_split=0.2,
+        noisy_indexes=None,
+        manual_test=None
     ):
         super().__init__()
         self.paths = paths
@@ -198,70 +202,71 @@ class CtVolumeData(pl.LightningDataModule):
         self.dataset_train = ...
         self.dataset_val = ...
         self.dataset_test = ...
-        
+
         """Split the train and valid dataset"""
-        dataset = ConcatDataset([VolumeDataset(path[0], path[1], self.num_pixel, self.dataset_stride) for path in self.paths])
+        dataset = ConcatDataset([VolumeDataset(
+            path[0], path[1], self.num_pixel, self.dataset_stride) for path in self.paths])
         self.dataset_size = len(dataset)
         split_test = int(np.round(self.test_split * self.dataset_size))
         split_val = int(np.round(self.val_split * self.dataset_size))
         split_train = int(self.dataset_size - split_test - split_val)
 
-
-
         # remove indices from our samples
         remove_idx = np.array([], dtype=int)
         if noisy_indexes is not None:
-             remove_idx = np.concatenate((noisy_indexes, remove_idx))
+            remove_idx = np.concatenate((noisy_indexes, remove_idx))
 
         # split dataset with seed and remove indices
         self.dataset_train, self.dataset_val, self.dataset_test = custom_random_split(dataset, [split_train, split_val, split_test],
-                                                                                torch.Generator().manual_seed(100), remove_idx)
-        
-        if remove_idx.size: #check for success of removal if not empty
-            assert np.isin(remove_idx, self.dataset_train.indices).all() == False
+                                                                                      torch.Generator().manual_seed(100), remove_idx)
+
+        if remove_idx.size:  # check for success of removal if not empty
+            assert np.isin(
+                remove_idx, self.dataset_train.indices).all() == False
             assert np.isin(remove_idx, self.dataset_val.indices).all() == False
-            assert np.isin(remove_idx, self.dataset_test.indices).all() == False
+            assert np.isin(
+                remove_idx, self.dataset_test.indices).all() == False
 
     def train_dataloader(self):
         train_loader = DataLoader(
-                        self.dataset_train,
-                        batch_size=self.batch_size,
-                        shuffle=True,
-                        num_workers=self.num_workers,
-                        pin_memory=True, # loads them directly in cuda pinned memory 
-                        drop_last=True,# drop the last incomplete batch
-                        prefetch_factor=2,# num of (2 * num_workers) samples prefetched
-                        persistent_workers=False, # keep workers persistent after dataset loaded once
-                        #sampler=self.train_sampler # sampler to pass in different indices
-                        ) 
+            self.dataset_train,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=True,  # loads them directly in cuda pinned memory
+            drop_last=True,  # drop the last incomplete batch
+            prefetch_factor=2,  # num of (2 * num_workers) samples prefetched
+            persistent_workers=False,  # keep workers persistent after dataset loaded once
+            # sampler=self.train_sampler # sampler to pass in different indices
+        )
         return train_loader
 
     def val_dataloader(self):
         val_loader = DataLoader(
-                self.dataset_val,
-                batch_size=self.batch_size,
-                shuffle=False,
-                num_workers=self.num_workers,
-                pin_memory=True, # loads them directly in cuda pinned memory 
-                drop_last=True,# drop the last incomplete batch
-                prefetch_factor=2,# num of (2 * num_workers) samples prefetched
-                persistent_workers=False, # keep workers persistent after dataset loaded once
-                #sampler=self.val_sampler # sampler to pass in different indices
-                ) 
+            self.dataset_val,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=True,  # loads them directly in cuda pinned memory
+            drop_last=True,  # drop the last incomplete batch
+            prefetch_factor=2,  # num of (2 * num_workers) samples prefetched
+            persistent_workers=False,  # keep workers persistent after dataset loaded once
+            # sampler=self.val_sampler # sampler to pass in different indices
+        )
 
         return val_loader
 
     def test_dataloader(self, override_batch_size=None):
         test_loader = DataLoader(
-                        self.dataset_test,
-                        batch_size=self.batch_size,
-                        shuffle=False,
-                        num_workers=self.num_workers,
-                        pin_memory=True, # loads them directly in cuda pinned memory 
-                        drop_last=True,# drop the last incomplete batch
-                        prefetch_factor=2,# num of (2 * num_workers) samples prefetched
-                        persistent_workers=False, # keep workers persistent after dataset loaded once
-                        #sampler=self.test_sampler # sampler to pass in different indices
-                        ) 
+            self.dataset_test,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=True,  # loads them directly in cuda pinned memory
+            drop_last=True,  # drop the last incomplete batch
+            prefetch_factor=2,  # num of (2 * num_workers) samples prefetched
+            persistent_workers=False,  # keep workers persistent after dataset loaded once
+            # sampler=self.test_sampler # sampler to pass in different indices
+        )
 
         return test_loader

@@ -18,10 +18,13 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
+
 def get_git_revision_short_hash(path):
     try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=path).decode('ascii').strip()
-        git_branch = subprocess.check_output(['git', 'branch', '-vv'], cwd=path).decode('ascii').strip()
+        git_hash = subprocess.check_output(
+            ['git', 'rev-parse', '--short', 'HEAD'], cwd=path).decode('ascii').strip()
+        git_branch = subprocess.check_output(
+            ['git', 'branch', '-vv'], cwd=path).decode('ascii').strip()
         for str_branch in git_branch.split('\n'):
             if str_branch.find('*') != -1:
                 git_branch = str_branch
@@ -30,6 +33,7 @@ def get_git_revision_short_hash(path):
         git_hash = "UNKNOWN"
         git_branch = "UNKNOWN"
     return git_hash, git_branch
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -43,20 +47,20 @@ def main():
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
                         help="directory where training artefacts are saved")
-    parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None, 
+    parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None,
                         help="Parameter to activate/ deactive the removement of noisy slices")
-    parser.add_argument("--batch-size", "-bs", required=True, default=16, 
+    parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
-    parser.add_argument("--plot-test-nr", "-pt", required=False, default=25, 
+    parser.add_argument("--plot-test-nr", "-pt", required=False, default=25,
                         help="Batch size")
-    parser.add_argument("--plot-val-nr", "-pv", required=False, default=5, 
+    parser.add_argument("--plot-val-nr", "-pv", required=False, default=5,
                         help="Batch size")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
 
     time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    with open(args.dir + time_str +"_train_args.json", "w+") as f:
+    with open(args.dir + time_str + "_train_args.json", "w+") as f:
         repo_path = os.path.split(args.file_in)[0]
         hash_id, branch = get_git_revision_short_hash(repo_path)
         trainDict = {}
@@ -64,7 +68,7 @@ def main():
         trainDict["Git Branch"] = str(branch)
         trainDict["Repo Dir"] = str(repo_path)
         trainDict["Args"] = args.__dict__
-        json.dump(trainDict, f, indent= 4)
+        json.dump(trainDict, f, indent=4)
         f.close()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -73,23 +77,26 @@ def main():
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
     num_workers = int(args.nr_workers) if args.nr_workers != None else None
     batch_size = int(args.batch_size) if args.batch_size != None else None
-    dataset_stride = 128 
-    num_pixel = 256 
+    dataset_stride = 128
+    num_pixel = 256
     test_split = 0.1
     val_split = 0.2
     noise_removal_threshold = 2.5
     dataset_paths = parse_dataset_paths(args.file_in, args.dataset_names)
     if args.remove_noisy_slices:
         print("Calculate and remove noisy indices")
-        add_datasets_to_noisy_images_json(args.file_in, args.file_noisy_indexes)
+        add_datasets_to_noisy_images_json(
+            args.file_in, args.file_noisy_indexes)
         update_noisy_indexes(num_pixel, dataset_stride, dataset_paths,
-                    args.file_noisy_indexes, threshold=noise_removal_threshold)
-    
-    number_of_nodes = int(args.num_nodes) if args.num_nodes  != None else None  # number of GPU nodes for distributed training.
-    number_of_gpus = int(args.gpus) if args.gpus  != None else None # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
-    max_epochs = int(args.max_epochs) if args.max_epochs != None else None# max number of epochs
+                             args.file_noisy_indexes, threshold=noise_removal_threshold)
 
-    
+    # number of GPU nodes for distributed training.
+    number_of_nodes = int(args.num_nodes) if args.num_nodes != None else None
+    # number of gpus to train on (int) or which GPUs to train on (list or str) applied per node
+    number_of_gpus = int(args.gpus) if args.gpus != None else None
+    # max number of epochs
+    max_epochs = int(args.max_epochs) if args.max_epochs != None else None
+
     # initialize tesnorboard logger
     path_log = os.path.join(args.dir, "logs")
     tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
@@ -111,12 +118,12 @@ def main():
 
     # train model
     trainer = pl.Trainer.from_argparse_args(
-        parser, 
+        parser,
         logger=tb_logger,
-        log_every_n_steps = 10,
+        log_every_n_steps=10,
         callbacks=[train_loss_callback, val_loss_callback],
         plugins=DDPPlugin(find_unused_parameters=False)
-        )
+    )
 
     # TODO: Add Command Line Interface (CLI)
     #cli = LightningCLI(LitClassifier, MNISTDataModule, seed_everything_default=1234)
@@ -124,34 +131,38 @@ def main():
 
     if args.remove_noisy_slices:
         noisy_indexes = get_noisy_indexes(args.file_noisy_indexes)
-    else: 
+    else:
         noisy_indexes = None
 
     # CT data loading
     ct_volumes = CtVolumeData(
-        paths=dataset_paths, 
+        paths=dataset_paths,
         batch_size=batch_size,
         num_workers=num_workers,
-        dataset_stride = dataset_stride, 
-        num_pixel = num_pixel,
-        test_split = test_split,
-        val_split = val_split,
-        noisy_indexes = None,
-        manual_test = None # np.array(cable_holder_ref)
-        )
+        dataset_stride=dataset_stride,
+        num_pixel=num_pixel,
+        test_split=test_split,
+        val_split=val_split,
+        noisy_indexes=None,
+        manual_test=None  # np.array(cable_holder_ref)
+    )
 
     # init model
-    loader = ct_volumes.val_dataloader() # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
-    img_test, gt = next(iter(loader)) # grab first batch for visualization
+    # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
+    loader = ct_volumes.val_dataloader()
+    img_test, gt = next(iter(loader))  # grab first batch for visualization
 
-    cnn = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr, plot_val_step=args.plot_val_nr) # pass batch for visualization to CNN
+    cnn = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                   plot_val_step=args.plot_val_nr)  # pass batch for visualization to CNN
     cnn.to(device)
-    
+
     trainer.fit(cnn, datamodule=ct_volumes)
 
     # test model
-    trainer.test(datamodule=ct_volumes, ckpt_path=val_loss_callback.best_model_path)
+    trainer.test(datamodule=ct_volumes,
+                 ckpt_path=val_loss_callback.best_model_path)
     # trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
+
 
 if __name__ == "__main__":
     main()
