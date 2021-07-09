@@ -47,6 +47,10 @@ def main():
                         help="Parameter to activate/ deactive the removement of noisy slices")
     parser.add_argument("--batch-size", "-bs", required=True, default=16, 
                         help="Batch size")
+    parser.add_argument("--plot-test-nr", "-pt", required=False, default=25, 
+                        help="Batch size")
+    parser.add_argument("--plot-val-nr", "-pv", required=False, default=5, 
+                        help="Batch size")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -140,7 +144,7 @@ def main():
     loader = ct_volumes.val_dataloader() # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
     img_test, gt = next(iter(loader)) # grab first batch for visualization
 
-    cnn = CNN_AICT(ref_img=[img_test, gt]) # pass batch for visualization to CNN
+    cnn = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr, plot_val_step=args.plot_val_nr) # pass batch for visualization to CNN
     cnn.to(device)
     
     trainer.fit(cnn, datamodule=ct_volumes)
