@@ -38,14 +38,14 @@ def make_grid(data,numrows):
     return c
 
 def plot_pred_gt(x, pred, gt):
-    fig = plt.figure(figsize=(16, 9))
+    fig = plt.figure(figsize=(16, 18))
 
     grid = ImageGrid(fig, 111,          # as in plt.subplot(111)
-                nrows_ncols=(1,3),
-                axes_pad=0.15,
+                nrows_ncols=(2,3),
+                axes_pad=(0.15, 0.3),
                 share_all=True,
                 cbar_location="right",
-                cbar_mode="single",
+                cbar_mode="edge",
                 cbar_size="7%",
                 cbar_pad=0.15,
                 )
@@ -57,6 +57,19 @@ def plot_pred_gt(x, pred, gt):
     grid[2].set_title("Ground Truth (Mono)")
     grid[2].cax.colorbar(im)
     grid[2].cax.toggle_label(True)
+
+    # Diff Poly Gt 
+    im = grid[3].imshow(np.squeeze(np.array(torch.Tensor.cpu(x-gt).detach().numpy())), cmap="gray")
+    grid[3].set_title("Input (Poly) - Ground Truth (Mono)")
+    # Diff Prediction Gt
+    im = grid[4].imshow(np.squeeze(np.array(torch.Tensor.cpu(pred-gt).detach().numpy())), cmap="gray")
+    grid[4].set_title("Prediction - Ground Truth (Mono)")
+    # Diff Prediction Poly 
+    im = grid[5].imshow(np.squeeze(np.array(torch.Tensor.cpu(pred-x).detach().numpy())), cmap="gray")
+    grid[5].set_title("Prediction - Input (Poly)")
+    grid[5].cax.colorbar(im)
+    grid[5].cax.toggle_label(True) 
+
     #plt.savefig(name+".png")
     return fig
 
