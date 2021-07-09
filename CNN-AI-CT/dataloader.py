@@ -7,7 +7,10 @@ import numpy as np
 import pytorch_lightning as pl
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data.distributed import DistributedSampler
-from torch.utils.data import random_split
+from torch._utils import _accumulate
+from torch import randperm
+from torch.utils.data import Subset
+#from torch.utils.data import random_split
 
 from utils import get_mean_grey_value
 
@@ -84,29 +87,6 @@ class VolumeDataset(Dataset):
 
         return [sample_bh, sample_gt]
 
-def get_dataloader(batch_size, number_of_workers, num_pixel, stride, volume_paths, sampler=None,shuffle=True):
-    """
-        @Args:
-            volume_paths: list of tuples, where the first entry is the file path
-                        of the .hdf5 file with the beam_hardened volume and the second
-                        the .hdf5 file with the ground_truth volume. 
-                        [(bh_path, gt_path), ...]
-    """
-
-    loader = DataLoader(
-                ConcatDataset([VolumeDataset(path[0], path[1], num_pixel, stride) for path in volume_paths]),
-                batch_size=batch_size,
-                shuffle=shuffle,
-                num_workers=number_of_workers,
-                pin_memory=True, # loads them directly in cuda pinned memory 
-                drop_last=True,# drop the last incomplete batch
-                prefetch_factor=2,# num of (2 * num_workers) samples prefetched
-                persistent_workers=False, # keep workers persistent after dataset loaded once
-                sampler=sampler # sampler to pass in different indices
-                ) 
-    return loader
-
-
 def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_path, threshold=1): 
     """
         This function adds the noisy indexes to the noisy_indexes_path file if the noisy indexes
@@ -169,8 +149,28 @@ def get_noisy_indexes(noisy_indexes_path: str) -> np.ndarray:
 
     return noisy_indexes
 
+def custom_random_split(dataset, lengths,
+                 generator, remove_idx: np.array):
+    r"""
+    Randomly split a dataset into non-overlapping new datasets of given lengths.
+    Optionally fix the generator for reproducible results, e.g.:
 
+    >>> random_split(range(10), [3, 7], generator=torch.Generator().manual_seed(42))
 
+    Args:
+        dataset (Dataset): Dataset to be split
+        lengths (sequence): lengths of splits to be produced
+        generator (Generator): Generator used for the random permutation.
+        remove_idx (np.array): indices that shall be removed BEFORE split
+    """
+    # Cannot verify that dataset is Sized
+    if sum(lengths) != len(dataset):  # type: ignore
+        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+
+    indices = randperm(sum(lengths), generator=generator).tolist()
+    if remove_idx.size:
+        indices = np.delete(indices, np.flatnonzero(np.isin(indices, remove_idx)))
+    return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
 
 class CtVolumeData(pl.LightningDataModule):
     def __init__(
@@ -206,24 +206,18 @@ class CtVolumeData(pl.LightningDataModule):
         split_val = int(np.round(self.val_split * self.dataset_size))
         split_train = int(self.dataset_size - split_test - split_val)
 
-        # split dataset with seed
-        self.dataset_train, self.dataset_val, self.dataset_test = random_split(dataset, [split_train, split_val, split_test],
-                                                                                generator=torch.Generator().manual_seed(100))
+
 
         # remove indices from our samples
         remove_idx = np.array([], dtype=int)
         if noisy_indexes is not None:
              remove_idx = np.concatenate((noisy_indexes, remove_idx))
-        
-        remove_idx = np.unique(remove_idx)
-        if remove_idx.size: # only run index removal if not empty
-            self.dataset_train.indices = np.delete(self.dataset_train.indices, 
-                                                    np.flatnonzero(np.isin(self.dataset_train.indices, remove_idx))) 
-            self.dataset_val.indices = np.delete(self.dataset_val.indices, 
-                                                    np.flatnonzero(np.isin(self.dataset_val.indices, remove_idx)))
-            self.dataset_test.indices = np.delete(self.dataset_test.indices, 
-                                                    np.flatnonzero(np.isin(self.dataset_test.indices, remove_idx)))
 
+        # split dataset with seed and remove indices
+        self.dataset_train, self.dataset_val, self.dataset_test = custom_random_split(dataset, [split_train, split_val, split_test],
+                                                                                torch.Generator().manual_seed(100), remove_idx)
+        
+        if remove_idx.size: #check for success of removal if not empty
             assert np.isin(remove_idx, self.dataset_train.indices).all() == False
             assert np.isin(remove_idx, self.dataset_val.indices).all() == False
             assert np.isin(remove_idx, self.dataset_test.indices).all() == False
