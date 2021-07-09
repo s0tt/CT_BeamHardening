@@ -198,33 +198,7 @@ class CtVolumeData(pl.LightningDataModule):
         self.dataset_train = ...
         self.dataset_val = ...
         self.dataset_test = ...
-
-        # loader = get_dataloader(batch_size, num_workers, num_pixel, dataset_stride, 
-        #                         paths, shuffle=False)
-        # self.dataset_size = len(loader.dataset)
-        # indices = np.array(range(self.dataset_size))
-
-        # remove_idx = np.array([], dtype=int)
-        # if noisy_indexes is not None:
-        #     remove_idx = np.concatenate((noisy_indexes, remove_idx))
         
-        # indices = np.delete(indices, np.unique(remove_idx)) # remove accumulated indices
-        # split_test = int(np.round(test_split * len(indices)))
-        # split_val = int(np.round(val_split * len(indices)))
-        # np.random.shuffle(indices)
-        # if manual_test is None:
-        #     test_indices = indices[:split_test]
-        # val_indices = indices[split_test:split_test+split_val]
-        # train_indices = indices[split_test+split_val:]
-
-        # self.train_sampler = SubsetRandomSampler(train_indices)
-        # self.test_sampler = SubsetRandomSampler(test_indices)
-        # self.val_sampler = SubsetRandomSampler(val_indices)
-
-        #for DDP use DistributedSampler
-        # self.train_sampler = DistributedSampler(loader.dataset)
-        # self.test_sampler = DistributedSampler(loader.dataset)
-        # self.val_sampler = DistributedSampler(loader.dataset)
         """Split the train and valid dataset"""
         dataset = ConcatDataset([VolumeDataset(path[0], path[1], self.num_pixel, self.dataset_stride) for path in self.paths])
         self.dataset_size = len(dataset)
@@ -232,15 +206,29 @@ class CtVolumeData(pl.LightningDataModule):
         split_val = int(np.round(self.val_split * self.dataset_size))
         split_train = int(self.dataset_size - split_test - split_val)
 
-        self.dataset_train, self.dataset_val, self.dataset_test = random_split(dataset, [split_train, split_val, split_test])
+        # split dataset with seed
+        self.dataset_train, self.dataset_val, self.dataset_test = random_split(dataset, [split_train, split_val, split_test],
+                                                                                generator=torch.Generator().manual_seed(100))
 
+        # remove indices from our samples
+        remove_idx = np.array([], dtype=int)
+        if noisy_indexes is not None:
+             remove_idx = np.concatenate((noisy_indexes, remove_idx))
+        
+        remove_idx = np.unique(remove_idx)
+        if remove_idx.size: # only run index removal if not empty
+            self.dataset_train.indices = np.delete(self.dataset_train.indices, 
+                                                    np.flatnonzero(np.isin(self.dataset_train.indices, remove_idx))) 
+            self.dataset_val.indices = np.delete(self.dataset_val.indices, 
+                                                    np.flatnonzero(np.isin(self.dataset_val.indices, remove_idx)))
+            self.dataset_test.indices = np.delete(self.dataset_test.indices, 
+                                                    np.flatnonzero(np.isin(self.dataset_test.indices, remove_idx)))
+
+            assert np.isin(remove_idx, self.dataset_train.indices).all() == False
+            assert np.isin(remove_idx, self.dataset_val.indices).all() == False
+            assert np.isin(remove_idx, self.dataset_test.indices).all() == False
 
     def train_dataloader(self):
-        #self.train_sampler = None
-        #if self.accelerator == ("ddp" or "ddp2" or "ddp_spawn"):
-        #self.train_sampler = DistributedSampler(self.dataset_train)
-        # self.test_sampler = DistributedSampler(loader.dataset)
-        # self.val_sampler = DistributedSampler(loader.dataset)
         train_loader = DataLoader(
                         self.dataset_train,
                         batch_size=self.batch_size,
@@ -252,15 +240,9 @@ class CtVolumeData(pl.LightningDataModule):
                         persistent_workers=False, # keep workers persistent after dataset loaded once
                         #sampler=self.train_sampler # sampler to pass in different indices
                         ) 
-
-
-        # return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.train_sampler, shuffle=False)
         return train_loader
 
     def val_dataloader(self):
-        #self.val_sampler = DistributedSampler(self.dataset_val)
-
         val_loader = DataLoader(
                 self.dataset_val,
                 batch_size=self.batch_size,
@@ -273,16 +255,9 @@ class CtVolumeData(pl.LightningDataModule):
                 #sampler=self.val_sampler # sampler to pass in different indices
                 ) 
 
-
-        # return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.train_sampler, shuffle=False)
         return val_loader
-        # return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.val_sampler, shuffle=False)
 
     def test_dataloader(self, override_batch_size=None):
-        #self.test_sampler = DistributedSampler(self.dataset_test)
-
         test_loader = DataLoader(
                         self.dataset_test,
                         batch_size=self.batch_size,
@@ -295,14 +270,4 @@ class CtVolumeData(pl.LightningDataModule):
                         #sampler=self.test_sampler # sampler to pass in different indices
                         ) 
 
-
-        # return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.train_sampler, shuffle=False)
         return test_loader
-
-        # if override_batch_size is not None:
-        #     return get_dataloader(override_batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.test_sampler, shuffle=False)
-        # else:
-        #     return get_dataloader(self.batch_size, self.num_workers, self.num_pixel, self.dataset_stride, self.paths, 
-        #                             sampler=self.test_sampler, shuffle=False)
