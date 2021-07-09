@@ -18,7 +18,6 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
-
 def get_git_revision_short_hash(path):
     try:
         git_hash = subprocess.check_output(
@@ -52,17 +51,20 @@ def main():
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--plot-test-nr", "-pt", required=False, default=25,
-                        help="Batch size")
+                        help="number of images to plot from test set")
     parser.add_argument("--plot-val-nr", "-pv", required=False, default=5,
-                        help="Batch size")
+                        help="number of images to plot from val set in each validation epoch")
+    parser.add_argument("--tb-name", "-tn", required=False, default="default",
+                    help="name of tensorboard experiment")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
 
     # initialize tensorboard logger
     path_log = os.path.join(args.dir, "logs")
-    os.makedirs(path_log + f'default', exist_ok=True)
-    tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
+    os.makedirs(os.path.join(path_log, args.tb_name), exist_ok=True)
+    
+    tb_logger = TensorBoardLogger(path_log, name=args.tb_name ,default_hp_metric=False)
     os.makedirs(tb_logger.log_dir, exist_ok=True)
 
     # construct JSON log
