@@ -59,8 +59,16 @@ def main():
 
     args = parser.parse_args()
 
+    # initialize tensorboard logger
+    path_log = os.path.join(args.dir, "logs")
+    os.makedirs(path_log + f'default', exist_ok=True)
+    tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
+    os.makedirs(tb_logger.log_dir, exist_ok=True)
+
+    # construct JSON log
     time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    with open(args.dir + time_str + "_train_args.json", "w+") as f:
+    json_path = os.path.join(tb_logger.log_dir, time_str+f"_train_args.json")
+    with open(json_path, "w+") as f:
         repo_path = os.path.split(args.file_in)[0]
         hash_id, branch = get_git_revision_short_hash(repo_path)
         trainDict = {}
@@ -97,21 +105,17 @@ def main():
     # max number of epochs
     max_epochs = int(args.max_epochs) if args.max_epochs != None else None
 
-    # initialize tesnorboard logger
-    path_log = os.path.join(args.dir, "logs")
-    tb_logger = TensorBoardLogger(path_log, default_hp_metric=False)
-
     # init checkpoints
     val_loss_callback = ModelCheckpoint(
         monitor='val_loss',
-        dirpath=path_log,
+        dirpath=tb_logger.log_dir,
         filename='CNN-AI-CT-{epoch:02d}-{val_loss:.2f}',
         mode='min',
     )
 
     train_loss_callback = ModelCheckpoint(
         monitor='train_loss',
-        dirpath=path_log,
+        dirpath=tb_logger.log_dir,
         filename='CNN-AI-CT-{epoch:02d}-{train_loss:.2f}',
         mode='min',
     )
