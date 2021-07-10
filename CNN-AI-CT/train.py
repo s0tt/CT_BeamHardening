@@ -50,9 +50,9 @@ def main():
                         help="Parameter to activate/ deactive the removement of noisy slices")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
-    parser.add_argument("--plot-test-nr", "-pt", required=False, default=25,
+    parser.add_argument("--plot-test-nr", "-pt", required=False, default=10,
                         help="number of images to plot from test set")
-    parser.add_argument("--plot-val-nr", "-pv", required=False, default=5,
+    parser.add_argument("--plot-val-nr", "-pv", required=False, default=None,
                         help="number of images to plot from val set in each validation epoch")
     parser.add_argument("--tb-name", "-tn", required=False, default="default",
                     help="name of tensorboard experiment")
