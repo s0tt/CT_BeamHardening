@@ -227,6 +227,11 @@ class CtVolumeData(pl.LightningDataModule):
             assert np.isin(
                 remove_idx, self.dataset_test.indices).all() == False
 
+        if self.manual_test is not None:
+            random_indices = np.random.randint(
+                0, len(self.dataset_test), int(self.manual_test))
+            self.dataset_test = Subset(self.dataset_test, random_indices)
+
     def train_dataloader(self):
         train_loader = DataLoader(
             self.dataset_train,
