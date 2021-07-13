@@ -8,7 +8,7 @@ def parse_dataset_paths(ct_data_path, dataset_names) -> list:
     f = open(ct_data_path, "r")
     data = json.load(f, encoding="utf-8")
     for entry in data["datasets"]:
-        if entry['name'] in dataset_names or "all" in dataset_names:
+        if entry['name'] in dataset_names or "all" == dataset_names:
             return_list.append(
                 (str(entry["ct"]), str(entry["gt"]), str(entry["name"])))
     f.close()
