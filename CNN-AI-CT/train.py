@@ -141,28 +141,6 @@ def main():
         manual_test=None  # np.array(cable_holder_ref)
     )
 
-    # construct JSON log
-    time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    json_path = os.path.join(path_log, time_str+f"_train_args.json")
-    with open(json_path, "w+") as f:
-        repo_path = os.path.split(args.file_in)[0]
-        hash_id, branch = get_git_revision_short_hash(repo_path)
-        trainDict = {}
-        trainDict["Git ID"] = str(hash_id)
-        trainDict["Git Branch"] = str(branch)
-        trainDict["Repo Dir"] = str(repo_path)
-        trainDict["TB Log Dir"] = str(tb_logger.log_dir)
-        trainDict["Data Paths"] = str([dataset[2]
-                                      for dataset in dataset_paths])
-        trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
-            ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
-        trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
-        trainDict["Len Noisy indexes"] = str(
-            len(noisy_indexes) if noisy_indexes is not None else 0)
-        trainDict["Args"] = args.__dict__
-        json.dump(trainDict, f, indent=4)
-        f.close()
-
     # init model
     # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
     loader = ct_volumes.val_dataloader()
@@ -172,6 +150,32 @@ def main():
                    plot_val_step=args.plot_val_nr)  # pass batch for visualization to CNN
     cnn.to(device)
 
+    # construct JSON log only once for all DDP processes
+    if cnn.global_rank == 0:
+        time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
+        os.makedirs(os.path.join(path_log,"json"), exist_ok=True)
+        json_path = os.path.join(path_log,"json",time_str+f"_train_args.json")
+        with open(json_path, "w+") as f:
+            repo_path = os.path.split(args.file_in)[0]
+            hash_id, branch = get_git_revision_short_hash(repo_path)
+            trainDict = {}
+            trainDict["Git ID"] = str(hash_id)
+            trainDict["Git Branch"] = str(branch)
+            trainDict["Repo Dir"] = str(repo_path)
+            trainDict["TB Log Dir"] = str(tb_logger.log_dir)
+            trainDict["Data Paths"] = str([dataset[2]
+                                        for dataset in dataset_paths])
+            trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
+                ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
+            trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
+            trainDict["Len Noisy indexes"] = str(
+                len(noisy_indexes) if noisy_indexes is not None else 0)
+            trainDict["Args"] = args.__dict__
+            json.dump(trainDict, f, indent=4)
+            f.close()
+
+
+    # fit model
     trainer.fit(cnn, datamodule=ct_volumes)
 
     # test model
