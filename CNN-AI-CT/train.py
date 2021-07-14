@@ -67,7 +67,7 @@ def main():
 
     tb_logger = TensorBoardLogger(
         path_log, name=args.tb_name, default_hp_metric=False)
-    os.makedirs(tb_logger.log_dir, exist_ok=True)
+    #os.makedirs(tb_logger.log_dir, exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
@@ -143,7 +143,7 @@ def main():
 
     # construct JSON log
     time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    json_path = os.path.join(tb_logger.log_dir, time_str+f"_train_args.json")
+    json_path = os.path.join(path_log, time_str+f"_train_args.json")
     with open(json_path, "w+") as f:
         repo_path = os.path.split(args.file_in)[0]
         hash_id, branch = get_git_revision_short_hash(repo_path)
