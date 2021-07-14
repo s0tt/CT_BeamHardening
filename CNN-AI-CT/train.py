@@ -13,6 +13,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.accelerators import accelerator
 from torch.nn.modules.activation import Threshold
 from pytorch_lightning.plugins import DDPPlugin
+import torchmetrics
+
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
@@ -172,6 +174,7 @@ def main():
             trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
                 ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
             trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
+            trainDict["Torchmetrics Ver"] = str(torchmetrics.__version__)
             trainDict["Len Noisy indexes"] = str(
                 len(noisy_indexes) if noisy_indexes is not None else 0)
             trainDict["Args"] = args.__dict__
