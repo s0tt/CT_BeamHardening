@@ -159,9 +159,11 @@ def main():
             repo_path = os.path.split(args.file_in)[0]
             hash_id, branch = get_git_revision_short_hash(repo_path)
             trainDict = {}
+            trainDict["Date"] = datetime.datetime.now().strftime("%m-%d-%y %H:%M:%S")
             trainDict["Git ID"] = str(hash_id)
             trainDict["Git Branch"] = str(branch)
             trainDict["Repo Dir"] = str(repo_path)
+            trainDict["Dataset Seed"] = str(ct_volumes.dataset_seed)
             trainDict["TB Log Dir"] = str(tb_logger.log_dir)
             trainDict["Data Paths"] = str([dataset[2]
                                         for dataset in dataset_paths])

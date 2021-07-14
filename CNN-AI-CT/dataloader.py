@@ -202,6 +202,7 @@ class CtVolumeData(pl.LightningDataModule):
         self.dataset_train = ...
         self.dataset_val = ...
         self.dataset_test = ...
+        self.dataset_seed = 100
 
         """Split the train and valid dataset"""
         dataset = ConcatDataset([VolumeDataset(
@@ -218,7 +219,7 @@ class CtVolumeData(pl.LightningDataModule):
 
         # split dataset with seed and remove indices
         self.dataset_train, self.dataset_val, self.dataset_test = custom_random_split(dataset, [split_train, split_val, split_test],
-                                                                                      torch.Generator().manual_seed(100), remove_idx)
+                                                                                      torch.Generator().manual_seed(self.dataset_seed), remove_idx)
 
         if remove_idx.size:  # check for success of removal if not empty
             assert np.isin(
