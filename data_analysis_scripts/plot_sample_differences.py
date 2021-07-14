@@ -17,13 +17,10 @@ def plot_slice(x, gt, dataset_name, out_path, index):
 
     fig, axs = plt.subplots(2, 2, figsize=(14, 15))
 
-    max_first_row = max([x.max(), gt.max()])
-    min_first_row = min([x.min(), gt.min()])
     fig.subplots_adjust(left=0.05, bottom=0.06, right=0.95,
                         top=0.94, wspace=0.18, hspace=.1)
 
-    im = axs[0, 0].imshow(x, vmin=min_first_row,
-                          vmax=max_first_row, cmap="gray")
+    im = axs[0, 0].imshow(x, cmap="gray")
     axs[0, 0].set_title("Input (Poly) | Mean: %.2f" % x.mean(), size=20)
 
     divider = make_axes_locatable(axs[0, 0])
@@ -31,8 +28,7 @@ def plot_slice(x, gt, dataset_name, out_path, index):
     cbar = plt.colorbar(im, cax=cax)
     cbar.ax.tick_params(labelsize=13)
 
-    im = axs[0, 1].imshow(gt, vmin=min_first_row,
-                          vmax=max_first_row, cmap="gray")
+    im = axs[0, 1].imshow(gt, cmap="gray")
     axs[0, 1].set_title("Gt (Mono) | Mean: %.2f" % gt.mean(), size=20)
 
     divider = make_axes_locatable(axs[0, 1])
