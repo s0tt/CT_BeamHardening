@@ -53,6 +53,8 @@ def main():
                         help="Batch size")
     parser.add_argument("--plot-test-nr", "-pt", required=False, default=10,
                         help="number of images to plot from test set")
+    parser.add_argument("--plot-weights", "-pw", required=False, action="store_true", default=False,
+                        help="If argument is given (-pw) plot model weights")
     parser.add_argument("--plot-val-nr", "-pv", required=False, default=None,
                         help="number of images to plot from val set in each validation epoch")
     parser.add_argument("--tb-name", "-tn", required=False, default="default",
@@ -147,7 +149,7 @@ def main():
     img_test, gt = next(iter(loader))  # grab first batch for visualization
 
     cnn = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                   plot_val_step=args.plot_val_nr)  # pass batch for visualization to CNN
+                   plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
     cnn.to(device)
 
     # construct JSON log only once for all DDP processes

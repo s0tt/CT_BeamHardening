@@ -9,13 +9,14 @@ from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
 
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False):
         super().__init__()
         self.ref_img = ref_img
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
         self.plot_val_step = plot_val_step  # n-val images shall be plotted
         self.plot_test_cnt = 0
         self.plot_val_cnt = 0
+        self.plot_weights = plot_weights
         metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
         self.train_metrics = metrics.clone(prefix='train_')
         self.val_metrics = metrics.clone(prefix='val_')
@@ -250,7 +251,8 @@ class CNN_AICT(pl.LightningModule):
                               name="ref_img_"+str(idx))
 
         # plot model filter weights after epoch
-        self.show_weights()
+        if self.plot_weights:
+            self.show_weights()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
