@@ -18,6 +18,7 @@ from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
 
+
 def get_git_revision_short_hash(path):
     try:
         git_hash = subprocess.check_output(
@@ -55,7 +56,7 @@ def main():
     parser.add_argument("--plot-val-nr", "-pv", required=False, default=None,
                         help="number of images to plot from val set in each validation epoch")
     parser.add_argument("--tb-name", "-tn", required=False, default="default",
-                    help="name of tensorboard experiment")
+                        help="name of tensorboard experiment")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -63,23 +64,10 @@ def main():
     # initialize tensorboard logger
     path_log = os.path.join(args.dir, "logs")
     os.makedirs(os.path.join(path_log, args.tb_name), exist_ok=True)
-    
-    tb_logger = TensorBoardLogger(path_log, name=args.tb_name ,default_hp_metric=False)
-    os.makedirs(tb_logger.log_dir, exist_ok=True)
 
-    # construct JSON log
-    time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-    json_path = os.path.join(tb_logger.log_dir, time_str+f"_train_args.json")
-    with open(json_path, "w+") as f:
-        repo_path = os.path.split(args.file_in)[0]
-        hash_id, branch = get_git_revision_short_hash(repo_path)
-        trainDict = {}
-        trainDict["Git ID"] = str(hash_id)
-        trainDict["Git Branch"] = str(branch)
-        trainDict["Repo Dir"] = str(repo_path)
-        trainDict["Args"] = args.__dict__
-        json.dump(trainDict, f, indent=4)
-        f.close()
+    tb_logger = TensorBoardLogger(
+        path_log, name=args.tb_name, default_hp_metric=False)
+    os.makedirs(tb_logger.log_dir, exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
@@ -152,6 +140,28 @@ def main():
         noisy_indexes=None,
         manual_test=None  # np.array(cable_holder_ref)
     )
+
+    # construct JSON log
+    time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
+    json_path = os.path.join(tb_logger.log_dir, time_str+f"_train_args.json")
+    with open(json_path, "w+") as f:
+        repo_path = os.path.split(args.file_in)[0]
+        hash_id, branch = get_git_revision_short_hash(repo_path)
+        trainDict = {}
+        trainDict["Git ID"] = str(hash_id)
+        trainDict["Git Branch"] = str(branch)
+        trainDict["Repo Dir"] = str(repo_path)
+        trainDict["TB Log Dir"] = str(tb_logger.log_dir)
+        trainDict["Data Paths"] = str([dataset[2]
+                                      for dataset in dataset_paths])
+        trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
+            ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
+        trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
+        trainDict["Len Noisy indexes"] = str(
+            len(noisy_indexes) if noisy_indexes is not None else 0)
+        trainDict["Args"] = args.__dict__
+        json.dump(trainDict, f, indent=4)
+        f.close()
 
     # init model
     # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
