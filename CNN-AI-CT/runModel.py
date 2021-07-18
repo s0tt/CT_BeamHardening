@@ -28,7 +28,7 @@ def runModel(chkpt_path, log_path, datasets, nr_test_samples, tensorboard_name, 
     model = CNN_AICT.load_from_checkpoint(chkpt_path)
     model.plot_test_step = nr_test_samples
     model.eval()
-    experiment_name = tensorboard_name+"-"+chkpt_path.split("/")[-1]
+    experiment_name = tensorboard_name+"-"+chkpt_path.split("/")[-2]+"-"+chkpt_path.split("/")[-1]
     os.makedirs(os.path.join(log_path,experiment_name), exist_ok=True)
     tb_logger = TensorBoardLogger(log_path, default_hp_metric=False, name=experiment_name)
     trainer = pl.Trainer(

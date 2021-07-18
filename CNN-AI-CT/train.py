@@ -13,6 +13,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.accelerators import accelerator
 from torch.nn.modules.activation import Threshold
 from pytorch_lightning.plugins import DDPPlugin
+import torchmetrics
+
 
 from CNN_ai_ct import CNN_AICT
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
@@ -53,6 +55,8 @@ def main():
                         help="Batch size")
     parser.add_argument("--plot-test-nr", "-pt", required=False, default=10,
                         help="number of images to plot from test set")
+    parser.add_argument("--plot-weights", "-pw", required=False, action="store_true", default=False,
+                        help="If argument is given (-pw) plot model weights")
     parser.add_argument("--plot-val-nr", "-pv", required=False, default=None,
                         help="number of images to plot from val set in each validation epoch")
     parser.add_argument("--tb-name", "-tn", required=False, default="default",
@@ -147,7 +151,7 @@ def main():
     img_test, gt = next(iter(loader))  # grab first batch for visualization
 
     cnn = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                   plot_val_step=args.plot_val_nr)  # pass batch for visualization to CNN
+                   plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
     cnn.to(device)
 
     # construct JSON log only once for all DDP processes
@@ -159,6 +163,7 @@ def main():
             repo_path = os.path.split(args.file_in)[0]
             hash_id, branch = get_git_revision_short_hash(repo_path)
             trainDict = {}
+            trainDict["Date"] = datetime.datetime.now().strftime("%m-%d-%y %H:%M:%S")
             trainDict["Git ID"] = str(hash_id)
             trainDict["Git Branch"] = str(branch)
             trainDict["Repo Dir"] = str(repo_path)
@@ -169,6 +174,7 @@ def main():
             trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
                 ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
             trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
+            trainDict["Torchmetrics Ver"] = str(torchmetrics.__version__)
             trainDict["Len Noisy indexes"] = str(
                 len(noisy_indexes) if noisy_indexes is not None else 0)
             trainDict["Args"] = args.__dict__

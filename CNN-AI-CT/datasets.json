@@ -17,8 +17,8 @@
         
     },
     {
-        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/poly/volume_transposed_and_cutted_fc1.hdf5",
-        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/mono/volume_transposed_and_cutted_fc1.hdf5", 
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/poly/volume_transposed_and_cutted_fc02.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/mono/volume_transposed_and_cutted_fc02.hdf5", 
         "name": "zuendkerze"
         
     },
