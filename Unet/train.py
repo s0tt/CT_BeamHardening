@@ -120,7 +120,7 @@ def main():
         logger=tb_logger,
         log_every_n_steps=10,
         callbacks=[train_loss_callback, val_loss_callback],
-        plugins=DDPPlugin(find_unused_parameters=False)
+        plugins=DDPPlugin(find_unused_parameters=True)
     )
 
     # TODO: Add Command Line Interface (CLI)
