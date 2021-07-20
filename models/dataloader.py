@@ -36,7 +36,7 @@ class ConcatDataset(torch.utils.data.Dataset):
 class VolumeDataset(Dataset):
     """Dataset for a single Volume v2, adapted that rotation axis is in the first dimension"""
 
-    def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, neighbour_img=[2, 3], transform=None):
+    def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, neighbour_img=[-2, 3], transform=None):
         """
         Args:
             file_path_bh (string): Path to the hdf5 beam hardening volume data.
@@ -72,13 +72,13 @@ class VolumeDataset(Dataset):
 
         with h5py.File(self.file_path_bh, 'r') as h5f:
             volume_bh = h5f['Volume']
-            sample_bh = volume_bh[x_index-self.neighbour_img[0]:x_index+self.neighbour_img[1],
+            sample_bh = volume_bh[x_index+self.neighbour_img[0]:x_index+self.neighbour_img[1],
                                   y_index*self.stride: y_index*self.stride + self.num_pixel,
                                   z_index*self.stride: z_index*self.stride + self.num_pixel]
 
         with h5py.File(self.file_path_gt, 'r') as h5f:
             volume_gt = h5f['Volume']
-            sample_gt = volume_gt[x_index-self.neighbour_img[0]:x_index+self.neighbour_img[1],
+            sample_gt = volume_gt[x_index+self.neighbour_img[0]:x_index+self.neighbour_img[1],
                                   y_index*self.stride: y_index*self.stride + self.num_pixel,
                                   z_index*self.stride: z_index*self.stride + self.num_pixel]
 

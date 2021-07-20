@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), '../CNN-AI-CT'))
+    os.path.realpath(__file__)), '../models'))
 
 from utils import parse_dataset_paths
 

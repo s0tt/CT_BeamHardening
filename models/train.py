@@ -16,6 +16,7 @@ from pytorch_lightning.plugins import DDPPlugin
 import torchmetrics
 
 
+from CNN_ai_ct import CNN_AICT
 from Unet import Unet
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
@@ -37,10 +38,22 @@ def get_git_revision_short_hash(path):
     return git_hash, git_branch
 
 
+def switch_model(model_str):
+    if str(model_str).lower() == "cnn-ai-ct":
+        neighbour_img = [-2, 3] # defines range of neighbour slices e.g. here -2 to +3 --> 5 slices
+    elif str(model_str).lower() == "unet":
+        neighbour_img = [0, 1] # defines range of neighbour slices e.g. here 0 to 1 --> 1 slice
+
+    return neighbour_img
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
+    parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
+                        help="model name [cnn-ai-ct, unet]")
+    parser.add_argument("--batch-size", "-bs", required=True, default=16,
+                        help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
                         help="Names of the datasets of --file-in that should be used for training")
     parser.add_argument("--file-noisy-indexes", "-nf", required=False,
@@ -51,8 +64,6 @@ def main():
                         help="directory where training artefacts are saved")
     parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None,
                         help="Parameter to activate/ deactive the removement of noisy slices")
-    parser.add_argument("--batch-size", "-bs", required=True, default=16,
-                        help="Batch size")
     parser.add_argument("--plot-test-nr", "-pt", required=False, default=10,
                         help="number of images to plot from test set")
     parser.add_argument("--plot-weights", "-pw", required=False, action="store_true", default=False,
@@ -71,7 +82,7 @@ def main():
 
     tb_logger = TensorBoardLogger(
         path_log, name=args.tb_name, default_hp_metric=False)
-    #os.makedirs(tb_logger.log_dir, exist_ok=True)
+    # os.makedirs(tb_logger.log_dir, exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
@@ -99,33 +110,23 @@ def main():
     # max number of epochs
     max_epochs = int(args.max_epochs) if args.max_epochs != None else None
 
+    # get model specific parts
+    neighbour_img = switch_model(str(args.model))
+
     # init checkpoints
     val_loss_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath=tb_logger.log_dir,
-        filename='UNET-CT-{epoch:02d}-{val_loss:.2f}',
+        filename=str(args.model)+'-{epoch:02d}-{val_loss:.2f}',
         mode='min',
     )
 
     train_loss_callback = ModelCheckpoint(
         monitor='train_loss',
         dirpath=tb_logger.log_dir,
-        filename='UNET-CT-{epoch:02d}-{train_loss:.2f}',
+        filename=str(args.model)+'-{epoch:02d}-{train_loss:.2f}',
         mode='min',
     )
-
-    # train model
-    trainer = pl.Trainer.from_argparse_args(
-        parser,
-        logger=tb_logger,
-        log_every_n_steps=10,
-        callbacks=[train_loss_callback, val_loss_callback],
-        plugins=DDPPlugin(find_unused_parameters=True)
-    )
-
-    # TODO: Add Command Line Interface (CLI)
-    #cli = LightningCLI(LitClassifier, MNISTDataModule, seed_everything_default=1234)
-    #result = cli.trainer.test(cli.model, datamodule=cli.datamodule)
 
     if args.remove_noisy_slices:
         noisy_indexes = get_noisy_indexes(args.file_noisy_indexes)
@@ -142,8 +143,8 @@ def main():
         test_split=test_split,
         val_split=val_split,
         noisy_indexes=None,
-        manual_test=None,  # np.array(cable_holder_ref)
-        neighbour_img = [2, -1], #get only the first image
+        manual_test=None,
+        neighbour_img = neighbour_img
     )
 
     # init model
@@ -151,27 +152,37 @@ def main():
     loader = ct_volumes.val_dataloader()
     img_test, gt = next(iter(loader))  # grab first batch for visualization
 
-    unet = Unet(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                   plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to Unet
-    unet.to(device)
+    if str(args.model).lower() == "cnn-ai-ct":
+        model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+        plugin = DDPPlugin(find_unused_parameters=True)
+    elif str(args.model).lower() == "unet":
+        model = Unet(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                     plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+        plugin = DDPPlugin(find_unused_parameters=True)
+    model.to(device)
 
     # construct JSON log only once for all DDP processes
-    if unet.global_rank == 0:
+    if model.global_rank == 0:
         time_str = datetime.datetime.now().strftime("%m_%d_%y__%H_%M_%S")
-        os.makedirs(os.path.join(path_log,"json"), exist_ok=True)
-        json_path = os.path.join(path_log,"json",time_str+f"_train_args.json")
+        os.makedirs(os.path.join(path_log, "json"), exist_ok=True)
+        json_path = os.path.join(
+            path_log, "json", time_str+f"_train_args.json")
         with open(json_path, "w+") as f:
             repo_path = os.path.split(args.file_in)[0]
             hash_id, branch = get_git_revision_short_hash(repo_path)
             trainDict = {}
-            trainDict["Date"] = datetime.datetime.now().strftime("%m-%d-%y %H:%M:%S")
+
+            trainDict["Date"] = datetime.datetime.now().strftime(
+                "%m-%d-%y %H:%M:%S")
+            trainDict["Model"] = str(args.model)
             trainDict["Git ID"] = str(hash_id)
             trainDict["Git Branch"] = str(branch)
             trainDict["Repo Dir"] = str(repo_path)
             trainDict["Dataset Seed"] = str(ct_volumes.dataset_seed)
             trainDict["TB Log Dir"] = str(tb_logger.log_dir)
             trainDict["Data Paths"] = str([dataset[2]
-                                        for dataset in dataset_paths])
+                                           for dataset in dataset_paths])
             trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
                 ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
             trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
@@ -182,15 +193,22 @@ def main():
             json.dump(trainDict, f, indent=4)
             f.close()
 
+    # train model
+    trainer = pl.Trainer.from_argparse_args(
+        parser,
+        logger=tb_logger,
+        log_every_n_steps=10,
+        callbacks=[train_loss_callback, val_loss_callback],
+        plugins=plugin
+    )
 
     # fit model
-    trainer.fit(unet, datamodule=ct_volumes)
+    trainer.fit(model, datamodule=ct_volumes)
 
     # test model
     trainer.test(datamodule=ct_volumes,
                  ckpt_path=val_loss_callback.best_model_path)
     # trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
-
 
 if __name__ == "__main__":
     main()
