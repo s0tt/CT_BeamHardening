@@ -189,7 +189,7 @@ class CtVolumeData(pl.LightningDataModule):
         val_split=0.2,
         noisy_indexes=None,
         manual_test=None,
-        neighbour_img=None,
+        neighbour_img=[-2, 3],
     ):
         super().__init__()
         self.paths = paths

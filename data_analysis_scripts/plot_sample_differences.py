@@ -64,7 +64,7 @@ def main():
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
                         help="Names of the datasets of --file-in that should analysed")
     parser.add_argument("--output-folder", "-o", required=False, 
-                        dafault="/net/pasnas01/pool1/enpro-2021-voxie/slice_images",
+                        default="/net/pasnas01/pool1/enpro-2021-voxie/slice_images",
                         help="Folder path in which all analysis data should be written")
     parser.add_argument("--dataset-stride", "-s", required=False, default=128, type=int,
                         help="Dataset stride")

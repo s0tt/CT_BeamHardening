@@ -17,6 +17,7 @@ import torchmetrics
 
 
 from CNN_ai_ct import CNN_AICT
+from IRR_CNN_ai_ct import IRR_CNN_AICT
 from Unet import Unet
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
 from utils import parse_dataset_paths, add_datasets_to_noisy_images_json
@@ -51,7 +52,7 @@ def main():
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
     parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
-                        help="model name [cnn-ai-ct, unet]")
+                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct]")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
@@ -62,6 +63,8 @@ def main():
                         help="number of worker subproccesses to prefetch")
     parser.add_argument("--dir", "-d", required=False, default="",
                         help="directory where training artefacts are saved")
+    parser.add_argument("--forward-iterations", "-fi", required=False, default=10,
+                        help="Number of forward iterations: See IRR-Networks for details")
     parser.add_argument("--remove-noisy-slices", "-rn", required=False, default=None,
                         help="Parameter to activate/ deactive the removement of noisy slices")
     parser.add_argument("--plot-test-nr", "-pt", required=False, default=10,
@@ -160,6 +163,12 @@ def main():
         model = Unet(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                      plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=True)
+    elif str(args.model).lower() == "irr-cnn-ai-ct":
+        model = IRR_CNN_AICT(forward_iterations=int(args.forward_iterations), ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                   plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
+        plugin = DDPPlugin(find_unused_parameters=True)
+
+
     model.to(device)
 
     # construct JSON log only once for all DDP processes
