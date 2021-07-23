@@ -17,6 +17,7 @@ import torchmetrics
 
 
 from CNN_ai_ct import CNN_AICT
+from CNN_ai_ct_silu import CNN_AICT_SILU
 from IRR_CNN_ai_ct import IRR_CNN_AICT
 from Unet import Unet
 from dataloader import CtVolumeData, update_noisy_indexes, get_noisy_indexes
@@ -40,6 +41,7 @@ def get_git_revision_short_hash(path):
 
 
 def switch_model(model_str):
+    neighbour_img = None
     if str(model_str).lower() == "cnn-ai-ct":
         neighbour_img = [-2, 3] # defines range of neighbour slices e.g. here -2 to +3 --> 5 slices
     elif str(model_str).lower() == "unet":
@@ -52,7 +54,7 @@ def main():
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
     parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
-                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct]")
+                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu]")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
@@ -167,7 +169,10 @@ def main():
         model = IRR_CNN_AICT(forward_iterations=int(args.forward_iterations), ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                    plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
         plugin = DDPPlugin(find_unused_parameters=True)
-
+    elif str(args.model).lower() == "cnn-ai-ct-silu":
+        model = CNN_AICT_SILU(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+        plugin = DDPPlugin(find_unused_parameters=False)
 
     model.to(device)
 

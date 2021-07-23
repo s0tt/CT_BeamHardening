@@ -189,7 +189,7 @@ class CtVolumeData(pl.LightningDataModule):
         val_split=0.2,
         noisy_indexes=None,
         manual_test=None,
-        neighbour_img=[-2, 3],
+        neighbour_img=None,
     ):
         super().__init__()
         self.paths = paths
@@ -201,7 +201,7 @@ class CtVolumeData(pl.LightningDataModule):
         self.val_split = val_split
         self.noisy_indexes = noisy_indexes
         self.manual_test = manual_test
-        self.neighbour_img = neighbour_img
+        self.neighbour_img = neighbour_img if neighbour_img  else [-2, 3]
         self.dataset_train = ...
         self.dataset_val = ...
         self.dataset_test = ...
