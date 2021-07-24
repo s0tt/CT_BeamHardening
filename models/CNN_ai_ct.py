@@ -9,7 +9,7 @@ from visualization import make_grid, plot_pred_gt, plot_ct
 
 class CNN_AICT(pl.LightningModule):
 
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False):
         super().__init__()
         self.ref_img = ref_img
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
@@ -78,6 +78,17 @@ class CNN_AICT(pl.LightningModule):
         self.endLayer = nn.Sequential(
             nn.Conv2d(64, 1, 3, padding=1, padding_mode="reflect")
         )
+        
+        if custom_init:
+            self.startLayer.apply(self.weights_init)
+            self.middleLayer.apply(self.weights_init)
+            self.endLayer.apply(self.weights_init)
+
+
+    def weights_init(self, seq):
+        if type(seq) in [nn.Conv2d, nn.Linear]:
+            torch.nn.init.normal_(seq.weight, mean=0.0, std=1.0)
+            torch.nn.init.normal_(seq.bias, mean=0.0, std=1.0)
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions

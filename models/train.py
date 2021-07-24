@@ -77,6 +77,8 @@ def main():
                         help="number of images to plot from val set in each validation epoch")
     parser.add_argument("--tb-name", "-tn", required=False, default="default",
                         help="name of tensorboard experiment")
+    parser.add_argument("--custom-init", "-ci", required=False, action="store_true", default=False,
+                        help="If argument is given (-ci) custom init the model weights")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -159,8 +161,8 @@ def main():
 
     if str(args.model).lower() == "cnn-ai-ct":
         model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
-        plugin = DDPPlugin(find_unused_parameters=True)
+                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init)
+        plugin = DDPPlugin(find_unused_parameters=False)
     elif str(args.model).lower() == "unet":
         model = Unet(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                      plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
