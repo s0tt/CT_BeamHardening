@@ -43,11 +43,14 @@ def get_git_revision_short_hash(path):
 def switch_model(model_str):
     neighbour_img = None
     if str(model_str).lower() == "cnn-ai-ct":
-        neighbour_img = [-2, 3] # defines range of neighbour slices e.g. here -2 to +3 --> 5 slices
+        # defines range of neighbour slices e.g. here -2 to +3 --> 5 slices
+        neighbour_img = [-2, 3]
     elif str(model_str).lower() == "unet":
-        neighbour_img = [0, 1] # defines range of neighbour slices e.g. here 0 to 1 --> 1 slice
+        # defines range of neighbour slices e.g. here 0 to 1 --> 1 slice
+        neighbour_img = [0, 1]
 
     return neighbour_img
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -125,6 +128,8 @@ def main():
         monitor='val_loss',
         dirpath=tb_logger.log_dir,
         filename=str(args.model)+'-{epoch:02d}-{val_loss:.2f}',
+        save_last=True,
+        save_top_k=2,
         mode='min',
     )
 
@@ -132,6 +137,8 @@ def main():
         monitor='train_loss',
         dirpath=tb_logger.log_dir,
         filename=str(args.model)+'-{epoch:02d}-{train_loss:.2f}',
+        save_last=True,
+        save_top_k=2,
         mode='min',
     )
 
@@ -151,7 +158,7 @@ def main():
         val_split=val_split,
         noisy_indexes=None,
         manual_test=None,
-        neighbour_img = neighbour_img
+        neighbour_img=neighbour_img
     )
 
     # init model
@@ -169,11 +176,11 @@ def main():
         plugin = DDPPlugin(find_unused_parameters=True)
     elif str(args.model).lower() == "irr-cnn-ai-ct":
         model = IRR_CNN_AICT(forward_iterations=int(args.forward_iterations), ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                   plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
+                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)  # pass batch for visualization to CNN
         plugin = DDPPlugin(find_unused_parameters=True)
     elif str(args.model).lower() == "cnn-ai-ct-silu":
         model = CNN_AICT_SILU(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+                              plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=False)
 
     model.to(device)
@@ -225,6 +232,7 @@ def main():
     trainer.test(datamodule=ct_volumes,
                  ckpt_path=val_loss_callback.best_model_path)
     # trainer.test(datamodule=ct_volumes, ckpt_path=train_loss_callback.best_model_path)
+
 
 if __name__ == "__main__":
     main()
