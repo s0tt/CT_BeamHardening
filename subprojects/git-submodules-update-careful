@@ -1,0 +1,66 @@
+#!/bin/sh
+
+set -e
+
+# Script which will do a 'git submodule update' everywhere as long as that does not switch away from a commit which is not recorded as subproject commit in any superproject commit (for anything in .git/refs)
+
+cd -- "$(git rev-parse --show-toplevel)"
+
+git submodule init
+
+git submodule status | sed 's/^/x/' | while read commit path; do
+    commit="${commit#x}"
+    flag="${commit%"${commit#?}"}"
+    commit="${commit#?}"
+    # if [ "$flag" = "" -a "$path" != "${path% ((null))}" ]; then # Newer git versions (e.g. 2.17.1) will return ' ' when "git init" was done but the submodule is not checked out
+    #     flag=-
+    #     commit="${path%% *}"
+    #     path="${path#* }"
+    # fi
+    if [ "$flag" = "" ]; then
+        commit="${path%% *}"
+        path="${path#* }"
+    fi
+    path="${path% (*)}" # Remove git describe output
+    if [ "$flag" = "" -a ! -e "$path/.git" ]; then # In git 2.20.1 there is no ((null)) when the submodule is not checked out and the output of 'git submodule status' is the same as when the commit matches, so check whether a .git is there (file or directory) and assume it is not checked out if this is missing
+        flag=-
+    fi
+    #echo "F:'$flag' C:'$commit' P:'$path'"
+    if [ "$flag" = "" ]; then
+        # Checked out, commit matches, ignore
+        :
+    elif [ "$flag" = "-" ]; then
+        # Not checked out
+        echo "Info: '$path': Not initialized, checking out..."
+        git submodule update --checkout -- "$path"
+    elif [ "$flag" = "+" ]; then
+        # Checked out, commit mismatch
+        cached="$(git submodule status --cached -- "$path" | sed 's/^.//;s/ .*//')"
+        #echo "$commit $cached"
+        git log --format=%H --all -- "$path" |
+            while read id; do git ls-tree --full-tree "$id" -- "$path" | sed "s/\t.*/ $id/"; done |
+            grep '^[^ ]* commit ' |
+            sed 's/^[^ ]* [^ ]* //' |
+            #sort -k 1 -u |
+            grep "^$commit" |
+            head -1 |
+            (
+                while read subcommit supercommit; do
+                    if [ "$subcommit" != "$commit" ]; then
+                        echo "Error: <$subcommit> != <$commit>" >&2
+                        exit 1
+                    fi
+                    echo "Info: '$path': Current subproject commit $commit is referenced in superproject commit $supercommit, updating to $cached..."
+                    git submodule update --checkout -- "$path"
+                    exit 0
+                done
+                echo "Warning: '$path': Current subproject commit $commit not found anywhere, is not being updated to $cached."
+            )
+    elif [ "$flag" = "U" ]; then
+        # Merge conflict
+        echo "Warning: '$path': Has merge conflict, ignoring" >&2
+    else
+        echo "Unknown flag: '$flag'" >&2
+        exit 1
+    fi
+done

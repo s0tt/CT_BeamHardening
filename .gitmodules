@@ -1,0 +1,3 @@
+[submodule "subprojects/voxie-intern"]
+	path = subprojects/voxie-intern
+	url = https://gitlab-pas.informatik.uni-stuttgart.de/kiesssn/voxie-intern
