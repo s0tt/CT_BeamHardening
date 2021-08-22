@@ -1,8 +1,8 @@
 #include "PytorchModel.hpp"
 
-LocalThickness::LocalThickness() {}
+PytorchModel::PytorchModel() {}
 
-void LocalThickness::computeNaive(
+void PytorchModel::computeNaive(
     vx::Array3<const float>& inputVolume, vx::Array3<float>& outputVolume,
     vx::ClaimedOperation<de::uni_stuttgart::Voxie::ExternalOperationRunFilter>&
         prog) {
@@ -45,7 +45,7 @@ void LocalThickness::computeNaive(
   HANDLEDBUSPENDINGREPLY(prog.opGen().SetProgress(1.00, vx::emptyOptions()));
 }
 
-void LocalThickness::compute(
+void PytorchModel::compute(
     vx::Array3<const float>& inputVolume, vx::Array3<float>& outputVolume,
     vx::ClaimedOperation<de::uni_stuttgart::Voxie::ExternalOperationRunFilter>&
         prog) {

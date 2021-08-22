@@ -40,6 +40,10 @@ moc_files = qt5.preprocess(
   dependencies : [ qt5_dep_moc],
 )
 
+#torch_dep = declare_dependency(link_args : ['-L/usr/include/libtorch', '-llibtorch'],
+#                               include_directories : ['/usr/include/libtorch/include'])
+#torch_dep = declare_dependency(link_args : ['-ltorch'])
+
 main = executable(
   name,
   [
@@ -54,6 +58,7 @@ main = executable(
   link_args : [
     '-lGL',
     '-lGLU',
+    '-llibtorch',
   ],
   implicit_include_directories : false,
   install : true,
@@ -61,8 +66,10 @@ main = executable(
     qt5_dep,
     rt_dep,
     voxiebackend_dep,
-    voxieclient_dep
+    voxieclient_dep,
+    torch_dep
   ],
+  #build_rpath : '/usr/include/libtorch/'
 )
 
 configure_file(

@@ -1,9 +1,9 @@
-#ifndef LOCALTHICKNESS_H
-#define LOCALTHICKNESS_H
+#pragma once
 
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusTypeList.hpp>
+#include <torch/script.h>
 
 #include <array>
 #include <cmath>
@@ -11,9 +11,9 @@
 
 #include <QObject>
 
-class LocalThickness {
+class PytorchModel {
  public:
-  LocalThickness();
+  PytorchModel();
   void compute(vx::Array3<const float>& inputVolume,
                vx::Array3<float>& outputVolume,
                vx::ClaimedOperation<
@@ -23,5 +23,3 @@ class LocalThickness {
       vx::ClaimedOperation<
           de::uni_stuttgart::Voxie::ExternalOperationRunFilter>& prog);
 };
-
-#endif  // LOCALTHICKNESS_H

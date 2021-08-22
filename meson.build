@@ -8,6 +8,10 @@ elif res.stderr() != ''
   message('Command "' + command + '" output:\n' + res.stderr())
 endif
 
+#cpp = meson.get_compiler('cpp')
+#myLib_dep = cpp.find_library('libtorch', dirs: '/usr/include/libtorch/', required: true)
+torch_dep = dependency('torch')
+
 voxie_proj = subproject('voxie-intern', default_options : [ 'libvoxie=disabled', 'main=disabled', 'plugins=disabled', 'ext=disabled', 'extra=disabled', 'test=disabled' ])
 voxieclient_dep = voxie_proj.get_variable('voxieclient_dep')
 voxiebackend_dep = voxie_proj.get_variable('voxiebackend_dep')
