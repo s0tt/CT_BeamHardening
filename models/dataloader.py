@@ -33,7 +33,53 @@ class ConcatDataset(torch.utils.data.Dataset):
         return sum([len(d) for d in self.datasets])
 
 
-class VolumeDataset(Dataset):
+class VolumeDatasetInfere(Dataset):
+    """Inference Dataset for a single Volume, adapted that rotation axis is in the first dimension
+        Dataset stride will always be equal to num_pixels"""
+
+    def __init__(self, file_path_bh, num_pixel=256, neighbour_img=[-2, 3], transform=None):
+        """
+        Args:
+            file_path_bh (string): Path to the hdf5 beam hardening volume data.
+            num_pixel: desired slice size (num_pixel, num_pixel)
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.file_path_bh = file_path_bh
+        self.transform = transform
+        self.num_pixel = num_pixel
+        self.stride = num_pixel
+        self.neighbour_img = neighbour_img
+
+        with h5py.File(self.file_path_bh, 'r') as h5f:
+            self.x, self.y, self.z = h5f['Volume'].shape
+
+        self.num_samples_in_y = int((self.y-self.num_pixel)/self.stride) + 1
+        self.num_samples_in_z = int((self.z-self.num_pixel)/self.stride) + 1
+
+        self.num_samples_per_slice = self.num_samples_in_y*self.num_samples_in_z
+
+    def __len__(self):
+        return self.num_samples_per_slice*(self.x - 4)
+
+    def __getitem__(self, idx):
+        x_index = int((idx)/self.num_samples_per_slice) + 2
+        overlay = idx % self.num_samples_per_slice
+        z_index = int(overlay/self.num_samples_in_y)
+        y_index = overlay % self.num_samples_in_y
+
+        with h5py.File(self.file_path_bh, 'r') as h5f:
+            volume_bh = h5f['Volume']
+            sample_bh = volume_bh[x_index+self.neighbour_img[0]:x_index+self.neighbour_img[1],
+                                  y_index*self.stride: y_index*self.stride + self.num_pixel,
+                                  z_index*self.stride: z_index*self.stride + self.num_pixel]
+
+        if self.transform:
+            sample_bh = self.transform(sample_bh)
+
+        return sample_bh
+
+class VolumeDatasetTrain(Dataset):
     """Dataset for a single Volume v2, adapted that rotation axis is in the first dimension"""
 
     def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, neighbour_img=[-2, 3], transform=None):
@@ -106,9 +152,9 @@ def update_noisy_indexes(num_pixel, dataset_stride, volume_paths, noisy_indexes_
 
         # Check if dataset was already parsed
         if not entry["noisy_samples_known"]:
-            dataset = VolumeDataset(volume_paths[dataset_idx][0],
-                                    volume_paths[dataset_idx][1],
-                                    num_pixel, dataset_stride)
+            dataset = VolumeDatasetTrain(volume_paths[dataset_idx][0],
+                                         volume_paths[dataset_idx][1],
+                                         num_pixel, dataset_stride)
             indexes_to_remove = []
             # mean_grey_value = get_mean_grey_value(volume_paths[dataset_idx][0]) #(Use maybe later)
 
@@ -201,14 +247,14 @@ class CtVolumeData(pl.LightningDataModule):
         self.val_split = val_split
         self.noisy_indexes = noisy_indexes
         self.manual_test = manual_test
-        self.neighbour_img = neighbour_img if neighbour_img  else [-2, 3]
+        self.neighbour_img = neighbour_img if neighbour_img else [-2, 3]
         self.dataset_train = ...
         self.dataset_val = ...
         self.dataset_test = ...
         self.dataset_seed = 100
 
         """Split the train and valid dataset"""
-        dataset = ConcatDataset([VolumeDataset(
+        dataset = ConcatDataset([VolumeDatasetTrain(
             path[0], path[1], self.num_pixel, self.dataset_stride, neighbour_img=self.neighbour_img) for path in self.paths])
         self.dataset_size = len(dataset)
         split_test = int(np.round(self.test_split * self.dataset_size))
