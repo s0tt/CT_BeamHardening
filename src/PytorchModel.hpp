@@ -1,5 +1,6 @@
 #pragma once
 #include <torch/torch.h>
+#include <torch/script.h>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusTypeList.hpp>
@@ -14,12 +15,8 @@
 class PytorchModel {
  public:
   PytorchModel();
-  void compute(vx::Array3<const float>& inputVolume,
+  void infere(vx::Array3<const float>& inputVolume,
                vx::Array3<float>& outputVolume,
                vx::ClaimedOperation<
                    de::uni_stuttgart::Voxie::ExternalOperationRunFilter>& prog);
-  void computeNaive(
-      vx::Array3<const float>& inputVolume, vx::Array3<float>& outputVolume,
-      vx::ClaimedOperation<
-          de::uni_stuttgart::Voxie::ExternalOperationRunFilter>& prog);
 };

@@ -25,22 +25,6 @@
                     ],
                     "DisplayName": "Output Volume",
                     "Type": "de.uni_stuttgart.Voxie.PropertyType.OutputNodeReference"
-                },
-                "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method": {
-                    "DisplayName": "Method",
-                    "Type": "de.uni_stuttgart.Voxie.PropertyType.Enumeration",
-                    "UIPosition": 1,
-                    "EnumEntries": {
-                        "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Naive": {
-                            "DisplayName": "Naive",
-                            "UIPosition": 1
-                        },
-                        "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Heuristic": {
-                            "DisplayName": "Heuristic",
-                            "UIPosition": 2
-                        }
-                    },
-                    "DefaultValue": "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Naive"
                 }
             }
         }

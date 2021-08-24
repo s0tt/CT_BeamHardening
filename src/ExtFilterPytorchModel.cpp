@@ -12,7 +12,6 @@
 #include <VoxieClient/QtUtil.hpp>
 #include <VoxieClient/RefCountHolder.hpp>
 
-
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
@@ -27,9 +26,8 @@
 int main(int argc, char* argv[]) {
   try {
     if (argc < 1)
-      throw vx::Exception(
-          "de.uni_stuttgart.Voxie.PytorchModelFilter.Error",
-          "argc is smaller than 1");
+      throw vx::Exception("de.uni_stuttgart.Voxie.PytorchModelFilter.Error",
+                          "argc is smaller than 1");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Pytorch Model Filter");
@@ -60,21 +58,21 @@ int main(int argc, char* argv[]) {
       auto properties = vx::dbusGetVariantValue<QMap<QString, QDBusVariant>>(
           pars[filterPath]["Properties"]);
 
-      auto method = vx::dbusGetVariantValue<QString>(
-          properties["de.uni_stuttgart.Voxie.Filter.LocalThickness.Method"]);
-
       auto inputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
           properties["de.uni_stuttgart.Voxie.Input"]);
+
       auto inputDataPath =
           vx::dbusGetVariantValue<QDBusObjectPath>(pars[inputPath]["Data"]);
 
       auto inputData = makeSharedQObject<de::uni_stuttgart::Voxie::VolumeData>(
           dbusClient.uniqueName(), inputDataPath.path(),
           dbusClient.connection());
+
       auto inputDataVoxel =
           makeSharedQObject<de::uni_stuttgart::Voxie::VolumeDataVoxel>(
               dbusClient.uniqueName(), inputDataPath.path(),
               dbusClient.connection());
+
       auto outputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
           properties["de.uni_stuttgart.Voxie.Output"]);
 
@@ -98,6 +96,7 @@ int main(int argc, char* argv[]) {
             HANDLEDBUSPENDINGREPLY(volume_data->CreateUpdate(
                 dbusClient.clientPath(), QMap<QString, QDBusVariant>())));
 
+
         vx::Array3<const float> inputVolume(HANDLEDBUSPENDINGREPLY(
             inputDataVoxel->GetDataReadonly(QMap<QString, QDBusVariant>())));
 
@@ -107,14 +106,9 @@ int main(int argc, char* argv[]) {
 
         PytorchModel filter;
 
-        if (method ==
-            "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Naive") {
-          filter.computeNaive(inputVolume, volumeData, op);
-        }
-        if (method ==
-            "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Heuristic") {
-          filter.compute(inputVolume, volumeData, op);
-        }
+
+        filter.infere(inputVolume, volumeData, op);
+
         volume_version = createQSharedPointer<
             vx::RefObjWrapper<de::uni_stuttgart::Voxie::DataVersion>>(
             dbusClient,
