@@ -24,7 +24,8 @@ def runInference(model, chkpt_path, input_volume, output_path, forward_iteration
 
     model.eval()
 
-    model.to(device)
+    # test without putting the model to the device
+    #model.to(device)
 
     # use maybe later
     inputData = VolumeDatasetInfere(
