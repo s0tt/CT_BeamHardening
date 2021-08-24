@@ -12,6 +12,22 @@ from dataloader import VolumeDatasetInfere
 DATATYPE_USED = "float32"
 
 
+def add_headers_and_metadata(path_old: str, path_new: str):
+    """
+        Adds all headers and metadata from the old volume out of the 
+        volume dataset to the newly created volume. 
+    """
+    with h5py.File(path_old, "r") as f_in:
+        with h5py.File(path_new, "r+") as f_out:
+            for key in f_in.keys():
+                if key != "Volume":
+                    # Get parent group name for copy
+                    group_path = f_in[key].parent.name
+                    # Check existence of group, else create group+parent
+                    group_id = f_out.require_group(group_path)
+                    f_in.copy(key, group_id, group_path+key)
+
+
 def runInference(model, chkpt_path, input_volume, output_path, forward_iterations, device):
     # works at the moment just with CNN-AI-CT
     if str(model).lower() == "cnn-ai-ct":
@@ -24,8 +40,7 @@ def runInference(model, chkpt_path, input_volume, output_path, forward_iteration
 
     model.eval()
 
-    # test without putting the model to the device
-    #model.to(device)
+    model.to(device)
 
     # use maybe later
     inputData = VolumeDatasetInfere(
@@ -52,7 +67,7 @@ def runInference(model, chkpt_path, input_volume, output_path, forward_iteration
                     new_volume_dataset.resize(
                         new_volume_dataset.shape[0] + 1, axis=0)
                     new_volume_dataset[x_slice-2, :, :] = out_slice
-            
+
             new_volume_dataset.attrs['MATLAB_class'] = 'double'
 
 
@@ -74,6 +89,8 @@ def main():
 
     runInference(args.model, args.check_point, args.input_volume,
                  args.output_path, args.forward_iterations, args.device)
+
+    add_headers_and_metadata(args.input_volume, args.output_path)
 
 
 if __name__ == "__main__":
