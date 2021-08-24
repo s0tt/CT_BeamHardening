@@ -1,9 +1,9 @@
 #pragma once
-
+#include <torch/torch.h>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusTypeList.hpp>
-#include <torch/script.h>
+
 
 #include <array>
 #include <cmath>

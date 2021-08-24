@@ -1,3 +1,5 @@
+
+#include <PytorchModel.hpp>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusClient.hpp>
@@ -10,7 +12,6 @@
 #include <VoxieClient/QtUtil.hpp>
 #include <VoxieClient/RefCountHolder.hpp>
 
-#include <ExtFilterLocalThickness/LocalThickness.hpp>
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
@@ -104,7 +105,7 @@ int main(int argc, char* argv[]) {
             HANDLEDBUSPENDINGREPLY(volume->GetDataWritable(
                 update.path(), QMap<QString, QDBusVariant>())));
 
-        LocalThickness filter;
+        PytorchModel filter;
 
         if (method ==
             "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Naive") {
