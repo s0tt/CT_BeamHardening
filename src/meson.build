@@ -65,3 +65,9 @@ main = executable(
   #cpp_args : [ '-D_GLIBCXX_USE_CXX11_ABI=0' ],
   #build_rpath : join_paths(meson.current_source_dir(), libtorch_lib_path),
 )
+configure_file(
+  input : name + '.json',
+  output : name + '.json',
+  copy : true,
+)
+install_data(name + '.json')

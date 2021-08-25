@@ -76,6 +76,9 @@ int main(int argc, char* argv[]) {
       auto outputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
           properties["de.uni_stuttgart.Voxie.Output"]);
 
+      auto batchSize = vx::dbusGetVariantValue<qint64>(
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.BatchSize"]);
+
       auto size = inputDataVoxel->arrayShape();
       QMap<QString, QDBusVariant> options;
 
@@ -96,7 +99,6 @@ int main(int argc, char* argv[]) {
             HANDLEDBUSPENDINGREPLY(volume_data->CreateUpdate(
                 dbusClient.clientPath(), QMap<QString, QDBusVariant>())));
 
-
         vx::Array3<const float> inputVolume(HANDLEDBUSPENDINGREPLY(
             inputDataVoxel->GetDataReadonly(QMap<QString, QDBusVariant>())));
 
@@ -106,8 +108,6 @@ int main(int argc, char* argv[]) {
 
         PytorchModel filter;
 
-        int batchSize = 10;
-        
         filter.infere(inputVolume, volumeData, batchSize, op);
 
         volume_version = createQSharedPointer<

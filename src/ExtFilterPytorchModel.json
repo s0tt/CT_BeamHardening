@@ -25,6 +25,13 @@
                     ],
                     "DisplayName": "Output Volume",
                     "Type": "de.uni_stuttgart.Voxie.PropertyType.OutputNodeReference"
+                },
+                "de.uni_stuttgart.Voxie.Filter.PytorchModel.BatchSize": {
+                    "DisplayName": "Batch size",
+                    "Type": "de.uni_stuttgart.Voxie.PropertyType.Int",
+                    "MinimumValue": 0,
+                    "MaximumValue": 9999,
+                    "DefaultValue": 5
                 }
             }
         }

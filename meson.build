@@ -37,5 +37,6 @@ voxie_proj = subproject('voxie-intern', default_options : [ 'libvoxie=disabled',
 voxieclient_dep = voxie_proj.get_variable('voxieclient_dep')
 voxiebackend_dep = voxie_proj.get_variable('voxiebackend_dep')
 voxie_incdir = voxie_proj.get_variable('project_incdir') # Workaround for https://github.com/mesonbuild/meson/pull/8139
+add_project_arguments('-DQT_NO_KEYWORDS', language : 'cpp')
 
 subdir('src')

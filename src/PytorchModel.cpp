@@ -17,6 +17,7 @@ void PytorchModel::infere(
     // TODO: make this generic, not with my absolut path
     module = torch::jit::load(
         "/home/so/Git/dl_beamhardening/models/checkpoints/cnn-ai-ct_trace.pt");
+    //qDebug() << "WEIGHTS:" << module.startLayer.named_parameters()["weight"];
   } catch (const c10::Error& e) {
     qWarning() << "PytorchModel::infere error loading the model trace\n";
     return;
@@ -37,23 +38,22 @@ void PytorchModel::infere(
   qDebug() << "inputTensor Size:" << inputTensor.size(0) << ","
            << inputTensor.size(1) << "," << inputTensor.size(2);
 
-  int xmin, xmax, ymin, ymax, zmin, zmax, radius, xL, yL, zL;
-  float dist, xDist, yDist, zDist;
-
   std::vector<torch::Tensor> batchList;
   std::vector<int> indices;
   torch::TensorList tensors;
 
   // iterate over volume in x direction
   // TODO: handle borders where we can't get 5 neighbour slices
-  for (int x = 2; x < nx - 3; x++) {
-    auto sample =
-        inputTensor
-            .index({torch::indexing::Slice(x - 2, x + 3),
-                    torch::indexing::Slice(), torch::indexing::Slice()})
-            .unsqueeze(0);
+  for (int y = 2; y < ny - 3; y++) {
+    qDebug() << "Iterate in y direction: " << y;
+    auto sample = inputTensor
+                      .index({torch::indexing::Slice(),
+                              torch::indexing::Slice(y - 2, y + 3),
+                              torch::indexing::Slice()})
+                      .transpose(0, 1)
+                      .unsqueeze(0);
     batchList.push_back(sample);
-    indices.push_back(x);
+    indices.push_back(y);
 
     qDebug() << "Sample Size:" << sample.size(0) << "," << sample.size(1) << ","
              << sample.size(2) << "," << sample.size(3);
@@ -76,10 +76,14 @@ void PytorchModel::infere(
       // write output tensor to voxie volume
       int outputIdx = 0;
       for (int inputIdx : indices) {
-        for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
           for (int z = 0; z < nz; z++) {
-            outputVolume(inputIdx, y, z) =
-                outputTensor[outputIdx][0][y][z].item<float>();
+            // qDebug() << "Output (" << x << "," << inputIdx << "," << z << ")"
+            //          << " = outTensor(" << outputIdx << "," << x << "," << z
+            //          << ") with val: "
+            //          << outputTensor[outputIdx][0][x][z].item<float>();
+            outputVolume(x, inputIdx, z) =
+                outputTensor[outputIdx][0][x][z].item<float>();
           }
         }
         outputIdx++;
@@ -89,7 +93,7 @@ void PytorchModel::infere(
       batchList.clear();
     }
     HANDLEDBUSPENDINGREPLY(
-        prog.opGen().SetProgress(((float)x) / nx, vx::emptyOptions()));
+        prog.opGen().SetProgress(((float)y) / ny, vx::emptyOptions()));
   }
 
   HANDLEDBUSPENDINGREPLY(prog.opGen().SetProgress(1.00, vx::emptyOptions()));
