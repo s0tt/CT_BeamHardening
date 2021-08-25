@@ -106,8 +106,9 @@ int main(int argc, char* argv[]) {
 
         PytorchModel filter;
 
-
-        filter.infere(inputVolume, volumeData, op);
+        int batchSize = 10;
+        
+        filter.infere(inputVolume, volumeData, batchSize, op);
 
         volume_version = createQSharedPointer<
             vx::RefObjWrapper<de::uni_stuttgart::Voxie::DataVersion>>(

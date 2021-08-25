@@ -4,13 +4,12 @@ PytorchModel::PytorchModel() {}
 
 void PytorchModel::infere(
     vx::Array3<float const>& inputVolume, vx::Array3<float>& outputVolume,
+    int batchSize,
     vx::ClaimedOperation<de::uni_stuttgart::Voxie::ExternalOperationRunFilter>&
         prog) {
   torch::Tensor tensor = torch::rand({2, 3});
 
   // Create a vector of inputs.
-
-  std::vector<torch::jit::IValue> inputs;
 
   torch::jit::script::Module module;
   try {
@@ -30,38 +29,64 @@ void PytorchModel::infere(
   auto data = inputVolume.data();
 
   // TODO remove const_cast and clone data instead
+  // torch::Tensor inputTensor = torch::ones({nx, ny, nz});
   torch::Tensor inputTensor =
       torch::from_blob(const_cast<float*>(data), {nx, ny, nz});
+
+  qDebug() << "InputTensor Size:" << inputTensor.dim();
+  qDebug() << "inputTensor Size:" << inputTensor.size(0) << ","
+           << inputTensor.size(1) << "," << inputTensor.size(2);
 
   int xmin, xmax, ymin, ymax, zmin, zmax, radius, xL, yL, zL;
   float dist, xDist, yDist, zDist;
 
-  // iterate over volume in z direction
-  for (int z = 2; z < nz - 3; z++) {
+  std::vector<torch::Tensor> batchList;
+  std::vector<int> indices;
+  torch::TensorList tensors;
+
+  // iterate over volume in x direction
+  // TODO: handle borders where we can't get 5 neighbour slices
+  for (int x = 2; x < nx - 3; x++) {
     auto sample =
         inputTensor
-            .index({torch::indexing::Slice(), torch::indexing::Slice(),
-                    torch::indexing::Slice(z - 2, z + 3)})
-            .contiguous();
+            .index({torch::indexing::Slice(x - 2, x + 3),
+                    torch::indexing::Slice(), torch::indexing::Slice()})
+            .unsqueeze(0);
+    batchList.push_back(sample);
+    indices.push_back(x);
 
-    // auto sample = inputTensor.slice(2, z, z + 4)
+    qDebug() << "Sample Size:" << sample.size(0) << "," << sample.size(1) << ","
+             << sample.size(2) << "," << sample.size(3);
 
-    inputs.push_back(sample);
-  }
+    // check if enough samples for specified batch size
+    if (batchList.size() == batchSize) {
+      // cat samples to 4-dim tensor with (sample_dim, slice_dim, y_dim, z_dim)
+      auto batch = torch::cat({batchList});
+      qDebug() << "Batch Size:" << batch.size(0) << "," << batch.size(1) << ","
+               << batch.size(2) << "," << batch.size(3);
 
-  // Execute the model and turn its output into a tensor.
-  at::Tensor outputTensor = module.forward(inputs).toTensor();
-  std::cout << outputTensor.slice(/*dim=*/1, /*start=*/0, /*end=*/5) << '\n';
+      std::vector<torch::jit::IValue> inputs;
+      inputs.push_back(batch);
+      at::Tensor outputTensor = module.forward(inputs).toTensor();
 
-  nx = outputVolume.size<0>();
-  ny = outputVolume.size<1>();
-  nz = outputVolume.size<2>();
+      qDebug() << "OutputTensor Size:" << outputTensor.size(0) << ","
+               << outputTensor.size(1) << "," << outputTensor.size(2) << ","
+               << outputTensor.size(3);
 
-  for (int x = 0; x < nx; x++) {
-    for (int y = 0; y < ny; y++) {
-      for (int z = 0; z < nz; z++) {
-        outputVolume(x, y, z) = outputTensor[x][y][z].item<float>();
+      // write output tensor to voxie volume
+      int outputIdx = 0;
+      for (int inputIdx : indices) {
+        for (int y = 0; y < ny; y++) {
+          for (int z = 0; z < nz; z++) {
+            outputVolume(inputIdx, y, z) =
+                outputTensor[outputIdx][0][y][z].item<float>();
+          }
+        }
+        outputIdx++;
       }
+      indices.clear();
+      inputs.clear();
+      batchList.clear();
     }
     HANDLEDBUSPENDINGREPLY(
         prog.opGen().SetProgress(((float)x) / nx, vx::emptyOptions()));
