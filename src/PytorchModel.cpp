@@ -32,11 +32,10 @@ void PytorchModel::infere(
   // TODO remove const_cast and clone data instead
   // torch::Tensor inputTensor = torch::ones({nx, ny, nz});
   torch::Tensor inputTensor =
-      torch::from_blob(const_cast<float*>(data), {nx, ny, nz});
+      torch::from_blob(const_cast<float*>(data), {nz, ny, nx});
 
-  qDebug() << "InputTensor Size:" << inputTensor.dim();
-  qDebug() << "inputTensor Size:" << inputTensor.size(0) << ","
-           << inputTensor.size(1) << "," << inputTensor.size(2);
+  // transpose z and x to get back actual dimensions
+  inputTensor = inputTensor.transpose(0, 2);
 
   std::vector<torch::Tensor> batchList;
   std::vector<int> indices;
@@ -45,7 +44,6 @@ void PytorchModel::infere(
   // iterate over volume in x direction
   // TODO: handle borders where we can't get 5 neighbour slices
   for (int y = 2; y < ny - 3; y++) {
-    qDebug() << "Iterate in y direction: " << y;
     auto sample = inputTensor
                       .index({torch::indexing::Slice(),
                               torch::indexing::Slice(y - 2, y + 3),
@@ -55,33 +53,21 @@ void PytorchModel::infere(
     batchList.push_back(sample);
     indices.push_back(y);
 
-    qDebug() << "Sample Size:" << sample.size(0) << "," << sample.size(1) << ","
-             << sample.size(2) << "," << sample.size(3);
-
     // check if enough samples for specified batch size
     if (batchList.size() == batchSize) {
+
       // cat samples to 4-dim tensor with (sample_dim, slice_dim, y_dim, z_dim)
       auto batch = torch::cat({batchList});
-      qDebug() << "Batch Size:" << batch.size(0) << "," << batch.size(1) << ","
-               << batch.size(2) << "," << batch.size(3);
 
       std::vector<torch::jit::IValue> inputs;
       inputs.push_back(batch);
       at::Tensor outputTensor = module.forward(inputs).toTensor();
-
-      qDebug() << "OutputTensor Size:" << outputTensor.size(0) << ","
-               << outputTensor.size(1) << "," << outputTensor.size(2) << ","
-               << outputTensor.size(3);
 
       // write output tensor to voxie volume
       int outputIdx = 0;
       for (int inputIdx : indices) {
         for (int x = 0; x < nx; x++) {
           for (int z = 0; z < nz; z++) {
-            // qDebug() << "Output (" << x << "," << inputIdx << "," << z << ")"
-            //          << " = outTensor(" << outputIdx << "," << x << "," << z
-            //          << ") with val: "
-            //          << outputTensor[outputIdx][0][x][z].item<float>();
             outputVolume(x, inputIdx, z) =
                 outputTensor[outputIdx][0][x][z].item<float>();
           }
