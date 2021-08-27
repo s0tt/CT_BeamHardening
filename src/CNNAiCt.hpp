@@ -11,11 +11,14 @@
 
 #include <QObject>
 
-class PytorchModel {
+class CNNAiCt {
  public:
-  PytorchModel();
+  CNNAiCt(torch::jit::script::Module module);
   void infere(vx::Array3<const float>& inputVolume,
               vx::Array3<float>& outputVolume, int batchSize,
               vx::ClaimedOperation<
                   de::uni_stuttgart::Voxie::ExternalOperationRunFilter>& prog);
+
+ private:
+  torch::jit::script::Module module;
 };

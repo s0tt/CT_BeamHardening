@@ -1,5 +1,5 @@
 
-#include <PytorchModel.hpp>
+#include <CNNAiCt.hpp>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusClient.hpp>
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
           pars[filterPath]["Properties"]);
 
       auto inputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
-          properties["de.uni_stuttgart.Voxie.Input"]);
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.Input"]);
 
       auto inputDataPath =
           vx::dbusGetVariantValue<QDBusObjectPath>(pars[inputPath]["Data"]);
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
               dbusClient.connection());
 
       auto outputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
-          properties["de.uni_stuttgart.Voxie.Output"]);
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.Output"]);
 
       auto batchSize = vx::dbusGetVariantValue<qint64>(
           properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.BatchSize"]);
@@ -106,9 +106,35 @@ int main(int argc, char* argv[]) {
             HANDLEDBUSPENDINGREPLY(volume->GetDataWritable(
                 update.path(), QMap<QString, QDBusVariant>())));
 
-        PytorchModel filter;
+        qDebug() << "Read CNN-AI-CT properties";
+        auto modelType = vx::dbusGetVariantValue<QString>(
+            properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType"]);
 
-        filter.infere(inputVolume, volumeData, batchSize, op);
+        auto modelPath = vx::dbusGetVariantValue<QString>(
+            properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelPath"]);
+
+        torch::jit::script::Module module;
+        try {
+          // Deserialize the ScriptModule from a file using torch::jit::load().
+          module = torch::jit::load(modelPath.toStdString());
+        } catch (const c10::Error& e) {
+          qWarning() << "PytorchModel::infere error loading the model trace\n";
+          return 1;
+        }
+
+        if (modelType ==
+            "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType.CNNAiCt") {
+          qDebug() << "Create CNN-AI-CT with path " << modelPath;
+          CNNAiCt cnnAiCt(module);
+          cnnAiCt.infere(inputVolume, volumeData, batchSize, op);
+
+        } else if (modelType ==
+                   "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType."
+                   "Unet") {
+        } else if (modelType ==
+                   "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType."
+                   "IRRCNNAiCt") {
+        }
 
         volume_version = createQSharedPointer<
             vx::RefObjWrapper<de::uni_stuttgart::Voxie::DataVersion>>(

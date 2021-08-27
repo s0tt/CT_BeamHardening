@@ -30,7 +30,7 @@ moc_files = qt5.preprocess(
   moc_sources : [
   ],
   moc_headers : [
-    'PytorchModel.hpp',
+    'CNNAiCt.hpp',
 
   ],
   include_directories : [
@@ -45,7 +45,7 @@ main = executable(
   [
     moc_files,
     'ExtFilterPytorchModel.cpp',
-    'PytorchModel.cpp',
+    'CNNAiCt.cpp',
   ],
   include_directories : [
     project_incdir,
