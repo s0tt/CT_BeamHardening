@@ -1,6 +1,7 @@
 #pragma once
 #include <torch/script.h>
 #include <torch/torch.h>
+#include <torch/cuda.h>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusTypeList.hpp>

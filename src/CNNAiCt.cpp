@@ -7,6 +7,15 @@ void CNNAiCt::infere(
     int batchSize,
     vx::ClaimedOperation<de::uni_stuttgart::Voxie::ExternalOperationRunFilter>&
         prog) {
+  torch::Device device = torch::kCPU;
+
+  if (torch::cuda::is_available()) {
+    qDebug() << "CUDA is available! Running on GPU.";
+    device = torch::kCUDA;
+  }else{
+    qDebug() << "NO CUDA! Running on CPU.";
+  }
+
   int nx = inputVolume.size<0>();
   int ny = inputVolume.size<1>();
   int nz = inputVolume.size<2>();
@@ -19,10 +28,10 @@ void CNNAiCt::infere(
 
   // transpose z and x to get back actual dimensions
   inputTensor = inputTensor.transpose(0, 2);
+  inputTensor = inputTensor.to(device);
 
   std::vector<torch::Tensor> batchList;
   std::vector<int> indices;
-  torch::TensorList tensors;
 
   // iterate over volume in y direction
   for (int y = 0; y < ny; y++) {
@@ -78,7 +87,7 @@ void CNNAiCt::infere(
     // check if enough samples for specified batch size or last batch
     if (batchList.size() == batchSize || y == ny - 1) {
       // cat samples to 4-dim tensor with (sample_dim, slice_dim, y_dim, z_dim)
-      auto batch = torch::cat({batchList});
+      auto batch = torch::cat({batchList}).to(device);
 
       std::vector<torch::jit::IValue> inputs;
       inputs.push_back(batch);
