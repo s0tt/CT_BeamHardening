@@ -93,6 +93,7 @@ class IRR_CNN_AICT(pl.LightningModule):
             residual = self.endLayer(out)
             # subtract each time the residual from the prediction
             prediction = prediction - residual
+            x[:, 2, :, :] = torch.squeeze(prediction)
             predictions.append(torch.clone(prediction))
 
         return prediction, predictions
