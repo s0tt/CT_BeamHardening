@@ -13,7 +13,7 @@ import h5py
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')) 
 
 from dataloader import ConcatDataset 
-from dataloader import VolumeDataset 
+from dataloader import VolumeDatasetTrain 
 
 
 volume_path_20_20_20 = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', "test_data/volume.hdf5")
@@ -28,7 +28,7 @@ class TestDataloader_x20_y20_z20(unittest.TestCase):
         self.stride = 3 
         self.num_pixel = 5 
         self.dataset_path_x20_y20_z20 = [(volume_path_20_20_20, volume_path_20_20_20)]    
-        self.concatDataset_20_20_20 = ConcatDataset([VolumeDataset(path[0], path[1], self.num_pixel, self.stride) for path in self.dataset_path_x20_y20_z20])
+        self.concatDataset_20_20_20 = ConcatDataset([VolumeDatasetTrain(path[0], path[1], self.num_pixel, self.stride) for path in self.dataset_path_x20_y20_z20])
 
     def test_idx_0(self): 
         dataset_bh = self.concatDataset_20_20_20[0][1]
@@ -86,7 +86,7 @@ class TestDataloader_zuendkerze_bad(unittest.TestCase):
         self.dataset_path_zuendkerze = [(volume_path_zuendkerze,
                              volume_path_zuendkerze)]    
         
-        self.concatDataset_zuendkerze = ConcatDataset([VolumeDataset(path[0], path[1], self.num_pixel, self.stride) for path in self.dataset_path_zuendkerze])
+        self.concatDataset_zuendkerze = ConcatDataset([VolumeDatasetTrain(path[0], path[1], self.num_pixel, self.stride) for path in self.dataset_path_zuendkerze])
 
     def test_idx_0(self): 
         dataset_bh = self.concatDataset_zuendkerze[0][1]

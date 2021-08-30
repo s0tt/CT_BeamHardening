@@ -1,12 +1,16 @@
 import json
 import h5py
+import sys
 
 
 def parse_dataset_paths(ct_data_path, dataset_names) -> list:
     # returns tuple with (poly_path, mono_path, name)
     return_list = []
     f = open(ct_data_path, "r")
-    data = json.load(f, encoding="utf-8")
+    if (sys.version_info < (3,9)):
+        data = json.load(f, encoding="utf-8")
+    else:
+        data = json.load(f)
 
     isAllData = False
     if isinstance(dataset_names, list):

@@ -3,3 +3,4 @@ lightning_logs
 user_specific
 logs
 models/__pycache__
+build

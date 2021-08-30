@@ -6,6 +6,7 @@ import os
 import json
 import datetime
 import subprocess
+import itertools
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -82,6 +83,8 @@ def main():
                         help="name of tensorboard experiment")
     parser.add_argument("--custom-init", "-ci", required=False, action="store_true", default=False,
                         help="If argument is given (-ci) custom init the model weights")
+    parser.add_argument("--transfer-learn-path", "-tlp", required=False, default=None,
+                        help="Use transfer learning from given model checkpoint by freezing layers and retrain endLayer")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -167,9 +170,17 @@ def main():
     img_test, gt = next(iter(loader))  # grab first batch for visualization
 
     if str(args.model).lower() == "cnn-ai-ct":
-        model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                         plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init)
+        if args.transfer_learn_path is None:
+            model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                            plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init)
+        else:
+            model = CNN_AICT.load_from_checkpoint(args.transfer_learn_path)
+            # freeze start and middle layers for transfer-learning/fine-tuning of the endLayer to new data
+            for param in itertools.chain(model.startLayer.parameters(), model.middleLayer.parameters()):
+                param.requires_grad = False
+        
         plugin = DDPPlugin(find_unused_parameters=False)
+
     elif str(args.model).lower() == "unet":
         model = Unet(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                      plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
