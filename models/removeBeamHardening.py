@@ -37,6 +37,8 @@ def runInference(model, chkpt_path, input_volume, output_path, forward_iteration
     elif str(model).lower() == "irr-cnn-ai-ct":
         model = IRR_CNN_AICT(
             chkpt_path, forward_iterations=forward_iterations),
+    elif str(model).lower() == "jit":
+        model = torch.jit.load(chkpt_path)
 
     model.eval()
 

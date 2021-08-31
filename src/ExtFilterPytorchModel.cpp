@@ -1,3 +1,5 @@
+
+#include <CNNAiCt.hpp>
 #include <VoxieClient/Array.hpp>
 #include <VoxieClient/ClaimedOperation.hpp>
 #include <VoxieClient/DBusClient.hpp>
@@ -9,8 +11,6 @@
 #include <VoxieClient/MappedBuffer.hpp>
 #include <VoxieClient/QtUtil.hpp>
 #include <VoxieClient/RefCountHolder.hpp>
-
-#include <ExtFilterLocalThickness/LocalThickness.hpp>
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
@@ -26,9 +26,8 @@
 int main(int argc, char* argv[]) {
   try {
     if (argc < 1)
-      throw vx::Exception(
-          "de.uni_stuttgart.Voxie.PytorchModelFilter.Error",
-          "argc is smaller than 1");
+      throw vx::Exception("de.uni_stuttgart.Voxie.PytorchModelFilter.Error",
+                          "argc is smaller than 1");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Pytorch Model Filter");
@@ -59,23 +58,26 @@ int main(int argc, char* argv[]) {
       auto properties = vx::dbusGetVariantValue<QMap<QString, QDBusVariant>>(
           pars[filterPath]["Properties"]);
 
-      auto method = vx::dbusGetVariantValue<QString>(
-          properties["de.uni_stuttgart.Voxie.Filter.LocalThickness.Method"]);
-
       auto inputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
-          properties["de.uni_stuttgart.Voxie.Input"]);
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.Input"]);
+
       auto inputDataPath =
           vx::dbusGetVariantValue<QDBusObjectPath>(pars[inputPath]["Data"]);
 
       auto inputData = makeSharedQObject<de::uni_stuttgart::Voxie::VolumeData>(
           dbusClient.uniqueName(), inputDataPath.path(),
           dbusClient.connection());
+
       auto inputDataVoxel =
           makeSharedQObject<de::uni_stuttgart::Voxie::VolumeDataVoxel>(
               dbusClient.uniqueName(), inputDataPath.path(),
               dbusClient.connection());
+
       auto outputPath = vx::dbusGetVariantValue<QDBusObjectPath>(
-          properties["de.uni_stuttgart.Voxie.Output"]);
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.Output"]);
+
+      auto batchSize = vx::dbusGetVariantValue<qint64>(
+          properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.BatchSize"]);
 
       auto size = inputDataVoxel->arrayShape();
       QMap<QString, QDBusVariant> options;
@@ -104,16 +106,36 @@ int main(int argc, char* argv[]) {
             HANDLEDBUSPENDINGREPLY(volume->GetDataWritable(
                 update.path(), QMap<QString, QDBusVariant>())));
 
-        LocalThickness filter;
+        qDebug() << "Read CNN-AI-CT properties";
+        auto modelType = vx::dbusGetVariantValue<QString>(
+            properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType"]);
 
-        if (method ==
-            "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Naive") {
-          filter.computeNaive(inputVolume, volumeData, op);
+        auto modelPath = vx::dbusGetVariantValue<QString>(
+            properties["de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelPath"]);
+
+        torch::jit::script::Module module;
+        try {
+          // Deserialize the ScriptModule from a file using torch::jit::load().
+          module = torch::jit::load(modelPath.toStdString());
+        } catch (const c10::Error& e) {
+          qWarning() << "PytorchModel::infere error loading the model trace\n";
+          return 1;
         }
-        if (method ==
-            "de.uni_stuttgart.Voxie.Filter.LocalThickness.Method.Heuristic") {
-          filter.compute(inputVolume, volumeData, op);
+
+        if (modelType ==
+            "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType.CNNAiCt") {
+          qDebug() << "Create CNN-AI-CT with path " << modelPath;
+          CNNAiCt cnnAiCt(module);
+          cnnAiCt.infere(inputVolume, volumeData, batchSize, op);
+
+        } else if (modelType ==
+                   "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType."
+                   "Unet") {
+        } else if (modelType ==
+                   "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType."
+                   "IRRCNNAiCt") {
         }
+
         volume_version = createQSharedPointer<
             vx::RefObjWrapper<de::uni_stuttgart::Voxie::DataVersion>>(
             dbusClient,

@@ -30,7 +30,7 @@ moc_files = qt5.preprocess(
   moc_sources : [
   ],
   moc_headers : [
-    'PytorchModel.hpp',
+    'CNNAiCt.hpp',
 
   ],
   include_directories : [
@@ -40,17 +40,12 @@ moc_files = qt5.preprocess(
   dependencies : [ qt5_dep_moc],
 )
 
-#torch_dep = declare_dependency(link_args : ['-L/usr/include/libtorch', '-llibtorch'],
-#                               include_directories : ['/usr/include/libtorch/include'])
-#torch_dep = declare_dependency(link_args : ['-ltorch'])
-
 main = executable(
   name,
   [
     moc_files,
-
     'ExtFilterPytorchModel.cpp',
-    'PytorchModel.cpp',
+    'CNNAiCt.cpp',
   ],
   include_directories : [
     project_incdir,
@@ -58,20 +53,18 @@ main = executable(
   link_args : [
     '-lGL',
     '-lGLU',
-    '-llibtorch',
   ],
   implicit_include_directories : false,
   install : true,
   dependencies : [
-    qt5_dep,
-    rt_dep,
+    torch_dep,
     voxiebackend_dep,
     voxieclient_dep,
-    torch_dep
+    qt5_dep,
   ],
-  #build_rpath : '/usr/include/libtorch/'
+  #cpp_args : [ '-D_GLIBCXX_USE_CXX11_ABI=0' ],
+  #build_rpath : join_paths(meson.current_source_dir(), libtorch_lib_path),
 )
-
 configure_file(
   input : name + '.json',
   output : name + '.json',

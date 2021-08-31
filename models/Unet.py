@@ -3,7 +3,8 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch.nn.modules import padding
-from torchmetrics.regression import PSNR, MeanAbsoluteError
+from torchmetrics.regression import MeanAbsoluteError
+from torchmetrics.image import PSNR
 from torchmetrics import MetricCollection
 from visualization import make_grid, plot_pred_gt, plot_ct
 
