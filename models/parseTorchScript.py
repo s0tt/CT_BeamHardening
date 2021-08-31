@@ -25,6 +25,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-point", "-cp", required=True,
                         help="Path to model checkpoint")
+    parser.add_argument("--trace-name", "-tn", required=False, default=None,
+                        help="JIT trace naming")
     parser.add_argument("--model-name", "-m", required=True, default="cnn-ai-ct",
                         help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu]")
     parser.add_argument("--forward-iterations", "-fi", required=False, default=10,
@@ -46,10 +48,13 @@ def main():
                 args.check_point, forward_iterations=args.forward_iterations)
         else:
             return
-        res = runJitTrace(model, args.model_name, jit_data)
+
+        new_name = args.trace_name if args.trace_name is not None else args.model_name  
+    
+        res = runJitTrace(model, new_name, jit_data)
         if res:
             print("Jit trace successful. Created files {} and {}".format(
-                args.model_name+".pt", args.model_name+"_trace.pt"))
+                new_name+".pt", new_name+"_trace.pt"))
         else:
             print("Jit trace failed")
     else:
