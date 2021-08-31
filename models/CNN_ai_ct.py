@@ -252,15 +252,16 @@ class CNN_AICT(pl.LightningModule):
                 name, fig, global_step=self.current_epoch, close=True, walltime=None)
 
     def training_epoch_end(self, outputs) -> None:
-        self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
+        if self.ref_img is not None:
+            self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
 
-        # for all reference images plot model prediction after epoch
-        for idx in range(self.ref_img[0].shape[0]):
-            pred = self.ref_img[0][idx, :, :, :]
-            gt = self.ref_img[1][idx, :, :, :]
-            self.show_pred_gt(pred.type_as(outputs[0]["loss"]),
-                              gt.type_as(outputs[0]["loss"]),
-                              name="ref_img_"+str(idx))
+            # for all reference images plot model prediction after epoch
+            for idx in range(self.ref_img[0].shape[0]):
+                pred = self.ref_img[0][idx, :, :, :]
+                gt = self.ref_img[1][idx, :, :, :]
+                self.show_pred_gt(pred.type_as(outputs[0]["loss"]),
+                                gt.type_as(outputs[0]["loss"]),
+                                name="ref_img_"+str(idx))
 
         # plot model filter weights after epoch
         if self.plot_weights:
