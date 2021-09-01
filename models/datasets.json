@@ -33,6 +33,12 @@
         "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/flute/mono/volume_transposed_and_cutted_fc1_cont_AL.hdf5", 
         "name": "flute"
         
+    },
+    {
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5_CU.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/mono/volume_transposed_and_cutted_fc0_5_CU.hdf5", 
+        "name": "schraube"
+        
     }
     ]
 }
