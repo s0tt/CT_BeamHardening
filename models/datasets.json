@@ -35,8 +35,8 @@
         
     },
     {
-        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5.hdf5",
-        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/mono/volume_transposed_and_cutted_fc0_5.hdf5", 
+        "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5_CU.hdf5",
+        "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/mono/volume_transposed_and_cutted_fc0_5_CU.hdf5", 
         "name": "schraube"
         
     }
