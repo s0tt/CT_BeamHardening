@@ -85,6 +85,8 @@ def main():
                         help="If argument is given (-ci) custom init the model weights")
     parser.add_argument("--transfer-learn-path", "-tlp", required=False, default=None,
                         help="Use transfer learning from given model checkpoint by freezing layers and retrain endLayer")
+    parser.add_argument("--device", "-dv", required=False, default="cuda" if torch.cuda.is_available() else "cpu",
+                        help="Device (cuda/cpu)")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -97,7 +99,6 @@ def main():
         path_log, name=args.tb_name, default_hp_metric=False)
     # os.makedirs(tb_logger.log_dir, exist_ok=True)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     # Accelerator
     # 'ddp': multiple-gpus across many machines (python script based))
     # 'dp' : is DataParallel (split batch among GPUs of same machine)
@@ -193,8 +194,8 @@ def main():
         model = CNN_AICT_SILU(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                               plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=False)
-
-    model.to(device)
+    
+    model.to(args.device)
 
     # construct JSON log only once for all DDP processes
     if model.global_rank == 0:

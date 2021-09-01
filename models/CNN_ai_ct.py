@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics import MetricCollection
 from torchmetrics.regression import MeanAbsoluteError
-from torchmetrics.image import PSNR
+from torchmetrics import PSNR
 from visualization import make_grid, plot_pred_gt, plot_ct
 
 
