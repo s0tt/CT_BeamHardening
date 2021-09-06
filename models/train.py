@@ -18,6 +18,7 @@ import torchmetrics
 
 
 from CNN_ai_ct import CNN_AICT
+from CNN_ai_ct_skip import CNN_AICT_SKIP
 from CNN_ai_ct_silu import CNN_AICT_SILU
 from IRR_CNN_ai_ct import IRR_CNN_AICT
 from Unet import Unet
@@ -58,7 +59,7 @@ def main():
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
     parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
-                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu]")
+                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu, cnn-ai-ct-skip]")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
@@ -173,13 +174,13 @@ def main():
     if str(args.model).lower() == "cnn-ai-ct":
         if args.transfer_learn_path is None:
             model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                            plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init)
+                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init)
         else:
             model = CNN_AICT.load_from_checkpoint(args.transfer_learn_path)
             # freeze start and middle layers for transfer-learning/fine-tuning of the endLayer to new data
             for param in itertools.chain(model.startLayer.parameters(), model.middleLayer.parameters()):
                 param.requires_grad = False
-        
+
         plugin = DDPPlugin(find_unused_parameters=False)
 
     elif str(args.model).lower() == "unet":
@@ -194,7 +195,12 @@ def main():
         model = CNN_AICT_SILU(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                               plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=False)
-    
+
+    elif str(args.model).lower() == "cnn-ai-ct-skip":
+        model = CNN_AICT_SKIP(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                              plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+        plugin = DDPPlugin(find_unused_parameters=False)
+
     model.to(args.device)
 
     # construct JSON log only once for all DDP processes
