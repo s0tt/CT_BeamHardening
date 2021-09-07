@@ -1,5 +1,8 @@
 # DL_BeamHardening
 
+## Use-cases naming convention
+![Use-Cases](doc/UsecasesNamingConvention.png)
+
 ## Dataset preparation scripts
 
 ### tiff_to_hdf5
