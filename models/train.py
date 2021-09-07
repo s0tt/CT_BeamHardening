@@ -19,6 +19,7 @@ import torchmetrics
 
 from CNN_ai_ct import CNN_AICT
 from CNN_ai_ct_skip import CNN_AICT_SKIP
+from CNN_ai_ct_trans_skip import CNN_AICT_TRANS_SKIP
 from CNN_ai_ct_silu import CNN_AICT_SILU
 from IRR_CNN_ai_ct import IRR_CNN_AICT
 from Unet import Unet
@@ -59,7 +60,7 @@ def main():
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
     parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
-                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu, cnn-ai-ct-skip]")
+                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu, cnn-ai-ct-skip, cnn-ai-ct-trans-skip]")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
@@ -199,6 +200,11 @@ def main():
     elif str(args.model).lower() == "cnn-ai-ct-skip":
         model = CNN_AICT_SKIP(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                               plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
+        plugin = DDPPlugin(find_unused_parameters=False)
+
+    elif str(args.model).lower() == "cnn-ai-ct-trans-skip":
+        model = CNN_AICT_TRANS_SKIP(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
+                                    plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=False)
 
     model.to(args.device)
