@@ -16,6 +16,7 @@ from torch.nn.modules.activation import Threshold
 from pytorch_lightning.plugins import DDPPlugin
 import torchmetrics
 
+from PerceiverModel import PerceiverIO
 
 from CNN_ai_ct import CNN_AICT
 from CNN_ai_ct_skip import CNN_AICT_SKIP
@@ -51,7 +52,9 @@ def switch_model(model_str):
     elif str(model_str).lower() == "unet":
         # defines range of neighbour slices e.g. here 0 to 1 --> 1 slice
         neighbour_img = [0, 1]
-
+    elif str(model_str).lower() == "perceiver-io":
+        # defines range of neighbour slices e.g. here 0 to 1 --> 1 slice
+        neighbour_img = [0, 1]
     return neighbour_img
 
 
@@ -60,7 +63,7 @@ def main():
     parser.add_argument("--file-in", "-f", required=True,
                         help="Path to json file that contains all datasets")
     parser.add_argument("--model", "-m", required=True, default="cnn-ai-ct",
-                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu, cnn-ai-ct-skip, cnn-ai-ct-trans-skip]")
+                        help="model name [cnn-ai-ct, unet, irr-cnn-ai-ct, cnn-ai-ct-silu, cnn-ai-ct-skip, cnn-ai-ct-trans-skip, perceiver-io]")
     parser.add_argument("--batch-size", "-bs", required=True, default=16,
                         help="Batch size")
     parser.add_argument("--dataset-names", "-dn", required=False, nargs='+', default=["all"],
@@ -206,6 +209,24 @@ def main():
         model = CNN_AICT_TRANS_SKIP(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
                                     plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights)
         plugin = DDPPlugin(find_unused_parameters=False)
+
+    elif str(args.model).lower() == "perceiver-io":
+        model = PerceiverIO(
+            dim=256,                    # dimension of sequence to be encoded
+            queries_dim=32,            # dimension of decoder queries
+            logits_dim=256,            # dimension of final logits
+            depth=6,                   # depth of net
+            # number of latents, or induced set points, or centroids. different papers giving it different names
+            num_latents=256,
+            latent_dim=256,            # latent dimension
+            cross_heads=1,             # number of heads for cross attention. paper said 1
+            latent_heads=8,            # number of heads for latent self attention, 8
+            cross_dim_head=64,         # number of dimensions per cross attention head
+            latent_dim_head=64,        # number of dimensions per latent self attention head
+            # whether to weight tie layers (optional, as indicated in the diagram)
+            weight_tie_layers=False
+        )
+        plugin = DDPPlugin(find_unused_parameters=True)
 
     model.to(args.device)
 
