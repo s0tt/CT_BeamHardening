@@ -9,10 +9,10 @@ from visualization import make_grid, plot_pred_gt, plot_ct
 
 
 class CNN_AICT(pl.LightningModule):
-
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False):
         super().__init__()
         self.ref_img = ref_img
+        self.norm = norm
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
         self.plot_val_step = plot_val_step  # n-val images shall be plotted
         self.plot_test_cnt = 0
@@ -32,45 +32,45 @@ class CNN_AICT(pl.LightningModule):
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 1
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 2
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 3
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 4
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 5
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 6
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 7
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 8
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 9
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 10
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 11
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 12
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 13
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 14
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 2
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 3
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 4
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 5
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 6
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 7
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 8
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 9
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 10
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 11
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 12
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 13
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 14
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 15
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -79,12 +79,11 @@ class CNN_AICT(pl.LightningModule):
         self.endLayer = nn.Sequential(
             nn.Conv2d(64, 1, 3, padding=1, padding_mode="reflect")
         )
-        
+
         if custom_init:
             self.startLayer.apply(self.weights_init)
             self.middleLayer.apply(self.weights_init)
             self.endLayer.apply(self.weights_init)
-
 
     def weights_init(self, seq):
         if type(seq) in [nn.Conv2d, nn.Linear]:
@@ -93,9 +92,19 @@ class CNN_AICT(pl.LightningModule):
 
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
+
+        #if normalize parameter set, use normalization over batch layers
+        if self.norm:
+            mean = torch.mean(x, [1, 2, 3])
+            std = torch.std(x, [1, 2, 3], unbiased=False)
+            x = torch.div(torch.sub(x, mean[:,None,None,None]), std[:,None,None, None])
+
         out = self.startLayer(x)
         out = self.middleLayer(out)
         out = self.endLayer(out)
+
+        if self.norm:
+            out = torch.add(torch.multiply(out, std[:,None,None,None]), mean[:,None,None, None])
 
         # calculate residual as inference output
         x_2 = torch.unsqueeze(x[:, 2, :, :], dim=1)  # get input middle slices
@@ -260,8 +269,8 @@ class CNN_AICT(pl.LightningModule):
                 pred = self.ref_img[0][idx, :, :, :]
                 gt = self.ref_img[1][idx, :, :, :]
                 self.show_pred_gt(pred.type_as(outputs[0]["loss"]),
-                                gt.type_as(outputs[0]["loss"]),
-                                name="ref_img_"+str(idx))
+                                  gt.type_as(outputs[0]["loss"]),
+                                  name="ref_img_"+str(idx))
 
         # plot model filter weights after epoch
         if self.plot_weights:
