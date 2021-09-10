@@ -32,45 +32,45 @@ class CNN_AICT(pl.LightningModule):
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 1
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 2
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 3
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 4
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 5
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 6
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 7
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 8
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 9
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 10
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 11
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 12
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 13
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 14
-            # nn.BatchNorm2d(64),
-            # nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 2
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 3
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 4
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 5
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 6
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 7
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 8
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 9
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 10
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 11
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 12
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 13
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 14
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect"),  # 15
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -97,6 +97,7 @@ class CNN_AICT(pl.LightningModule):
         if self.norm:
             mean = torch.mean(x, [1, 2, 3])
             std = torch.std(x, [1, 2, 3], unbiased=False)
+            std[std==0] = 1e-5
             x = torch.div(torch.sub(x, mean[:,None,None,None]), std[:,None,None, None])
 
         out = self.startLayer(x)

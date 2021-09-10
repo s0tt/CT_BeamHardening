@@ -43,8 +43,8 @@ def plot_sample(row1, row2, title):
             # grid[2].cax.toggle_label(True)
 
 # load data
-al_path_in = "/home/so/TIFFs/reconstructed_volumes/grating_holder/poly/volume_trans_cut_fc0_5_downsampled.hdf5"
-cu_path_in = "/home/so/TIFFs/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5_downsampled.hdf5"
+al_path_in = "/home/so/enpro-2021-voxie/reconstructed_volumes/grating_holder/poly/volume_trans_cut_fc0_5_downsampled.hdf5"
+cu_path_in = "/home/so/enpro-2021-voxie/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5_downsampled.hdf5"
 
 with h5py.File(al_path_in, "r") as f_in:
     vol_hdf5 = f_in["Volume"]
