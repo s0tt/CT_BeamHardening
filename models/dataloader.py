@@ -10,6 +10,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch._utils import _accumulate
 from torch import randperm
 from torch.utils.data import Subset
+import copy
 #from torch.utils.data import random_split
 
 from utils import get_mean_grey_value
@@ -22,15 +23,25 @@ class ConcatDataset(torch.utils.data.Dataset):
         self.num_datasets = len(self.datasets)
         self.len_datasets = [len(d) for d in self.datasets]
 
-    def __getitem__(self, i):
+    def __getitem__(self, idx):
+        i = copy.deepcopy(idx)
         for j in range(self.num_datasets):
             if i < self.len_datasets[j]:
-                return self.datasets[j][i]
+                return idx, self.datasets[j][i]
             else:
                 i -= self.len_datasets[j]
 
     def __len__(self):
         return sum([len(d) for d in self.datasets])
+    
+    def name_by_index(self, idx):
+        i = copy.deepcopy(idx)
+        for j in range(self.num_datasets):
+            if i < self.len_datasets[j]:
+                return self.datasets[j].name
+            else:
+                i -= self.len_datasets[j]
+
 
 
 class VolumeDatasetInfere(Dataset):
@@ -92,6 +103,7 @@ class VolumeDatasetTrain(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
+        self.name = file_path_bh.split("/")[-3]
         self.file_path_bh = file_path_bh
         self.file_path_gt = file_path_gt
         self.transform = transform
@@ -254,9 +266,9 @@ class CtVolumeData(pl.LightningDataModule):
         self.dataset_seed = 100
 
         """Split the train and valid dataset"""
-        dataset = ConcatDataset([VolumeDatasetTrain(
+        self.dataset_all = ConcatDataset([VolumeDatasetTrain(
             path[0], path[1], self.num_pixel, self.dataset_stride, neighbour_img=self.neighbour_img) for path in self.paths])
-        self.dataset_size = len(dataset)
+        self.dataset_size = len(self.dataset_all)
         split_test = int(np.round(self.test_split * self.dataset_size))
         split_val = int(np.round(self.val_split * self.dataset_size))
         split_train = int(self.dataset_size - split_test - split_val)
@@ -267,7 +279,7 @@ class CtVolumeData(pl.LightningDataModule):
             remove_idx = np.concatenate((noisy_indexes, remove_idx))
 
         # split dataset with seed and remove indices
-        self.dataset_train, self.dataset_val, self.dataset_test = custom_random_split(dataset, [split_train, split_val, split_test],
+        self.dataset_train, self.dataset_val, self.dataset_test = custom_random_split(self.dataset_all, [split_train, split_val, split_test],
                                                                                       torch.Generator().manual_seed(self.dataset_seed), remove_idx)
 
         if remove_idx.size:  # check for success of removal if not empty
@@ -325,3 +337,6 @@ class CtVolumeData(pl.LightningDataModule):
         )
 
         return test_loader
+
+    def name_by_index(self, index):
+        return self.dataset_all.name_by_index(index)

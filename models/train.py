@@ -175,12 +175,12 @@ def main():
     # init model
     # ct_volumes.train_dataloader(override_batch_size=len(cable_holder_ref))
     loader = ct_volumes.val_dataloader()
-    img_test, gt = next(iter(loader))  # grab first batch for visualization
+    img_test, gt = next(iter(loader))[1]  # grab first batch for visualization
 
     if str(args.model).lower() == "cnn-ai-ct":
         if args.transfer_learn_path is None:
             model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init, norm=args.norm)
+                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init, norm=args.norm, vol=ct_volumes)
         else:
             model = CNN_AICT.load_from_checkpoint(args.transfer_learn_path)
             # freeze start and middle layers for transfer-learning/fine-tuning of the endLayer to new data

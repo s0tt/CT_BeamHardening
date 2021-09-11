@@ -10,7 +10,7 @@ from visualization import make_grid, plot_pred_gt, plot_ct
 
 class IRR_CNN_AICT(pl.LightningModule):
 
-    def __init__(self, forward_iterations=10, ref_img=None, 
+    def __init__(self, forward_iterations=10, ref_img=None,
                 plot_test_step=None, plot_val_step=None, plot_weights=False):
         super().__init__()
         self.forward_iterations = forward_iterations
@@ -85,7 +85,7 @@ class IRR_CNN_AICT(pl.LightningModule):
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
 
-        predictions = [] 
+        predictions = []
         # initialize prediction with input
         prediction = torch.unsqueeze(x[:, 2, :, :], dim=1)
         for i in range(self.forward_iterations):
@@ -104,10 +104,9 @@ class IRR_CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_graph(IRR_CNN_AICT(), sampleImg)
         return super().on_train_start()
 
-
     def sequence_loss(self, predictions, gt, gamma=0.8):
         """ Loss function defined over sequence of predictions """
-        n_predictions = len(predictions)    
+        n_predictions = len(predictions)
         loss = 0.0
 
         for i in range(n_predictions):
@@ -117,9 +116,10 @@ class IRR_CNN_AICT(pl.LightningModule):
 
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, data, batch_idx):
         # training_step defined the train loop.
         # It is independent of forward
+        dataset_idx, batch = data
         x, y = batch
 
         prediction, predictions = self(x)
@@ -134,7 +134,8 @@ class IRR_CNN_AICT(pl.LightningModule):
             "losses", {"train_loss": loss}, global_step=self.global_step)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual, predictions = self(x)
 
@@ -164,7 +165,8 @@ class IRR_CNN_AICT(pl.LightningModule):
     def on_validation_end(self) -> None:
         self.plot_val_cnt = 0
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual, predictions = self(x)
 

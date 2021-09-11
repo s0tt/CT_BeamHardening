@@ -356,9 +356,10 @@ class PerceiverIO(pl.LightningModule):
                          betas=(.9, .999), adam=True)
         return optimizer
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, data, batch_idx):
             # training_step defined the train loop.
             # It is independent of forward
+        dataset_idx, batch = data
         x, y = batch
         x = x.squeeze()
         pred_bh = self(x)

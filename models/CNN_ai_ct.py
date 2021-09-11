@@ -6,13 +6,15 @@ from torchmetrics import MetricCollection
 from torchmetrics.regression import MeanAbsoluteError
 from torchmetrics import PSNR
 from visualization import make_grid, plot_pred_gt, plot_ct
+from dataloader import CtVolumeData
 
 
 class CNN_AICT(pl.LightningModule):
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False, vol=None):
         super().__init__()
         self.ref_img = ref_img
         self.norm = norm
+        self.vol = vol #volume can be used to get dataset name by index for batch
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
         self.plot_val_step = plot_val_step  # n-val images shall be plotted
         self.plot_test_cnt = 0
@@ -93,19 +95,22 @@ class CNN_AICT(pl.LightningModule):
     def forward(self, x):
         # in lightning, forward defines the prediction/inference actions
 
-        #if normalize parameter set, use normalization over batch layers
+        # if normalize parameter set, use normalization over batch layers
+
         if self.norm:
             mean = torch.mean(x, [1, 2, 3])
             std = torch.std(x, [1, 2, 3], unbiased=False)
-            std[std==0] = 1e-5
-            x = torch.div(torch.sub(x, mean[:,None,None,None]), std[:,None,None, None])
+            std[std == 0] = 1e-5
+            x = torch.div(
+                torch.sub(x, mean[:, None, None, None]), std[:, None, None, None])
 
         out = self.startLayer(x)
         out = self.middleLayer(out)
         out = self.endLayer(out)
 
         if self.norm:
-            out = torch.add(torch.multiply(out, std[:,None,None,None]), mean[:,None,None, None])
+            out = torch.add(torch.multiply(
+                out, std[:, None, None, None]), mean[:, None, None, None])
 
         # calculate residual as inference output
         x_2 = torch.unsqueeze(x[:, 2, :, :], dim=1)  # get input middle slices
@@ -117,9 +122,10 @@ class CNN_AICT(pl.LightningModule):
         self.logger.experiment.add_graph(CNN_AICT(), sampleImg)
         return super().on_train_start()
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, data, batch_idx):
         # training_step defined the train loop.
         # It is independent of forward
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 
@@ -134,7 +140,8 @@ class CNN_AICT(pl.LightningModule):
             "losses", {"train_loss": loss}, global_step=self.global_step)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 
@@ -164,7 +171,8 @@ class CNN_AICT(pl.LightningModule):
     def on_validation_end(self) -> None:
         self.plot_val_cnt = 0
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 

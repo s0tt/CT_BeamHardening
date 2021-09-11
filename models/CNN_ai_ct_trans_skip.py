@@ -120,9 +120,10 @@ class CNN_AICT_TRANS_SKIP(pl.LightningModule):
         self.logger.experiment.add_graph(CNN_AICT_TRANS_SKIP(), sampleImg)
         return super().on_train_start()
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, data, batch_idx):
         # training_step defined the train loop.
         # It is independent of forward
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 
@@ -137,7 +138,8 @@ class CNN_AICT_TRANS_SKIP(pl.LightningModule):
             "losses", {"train_loss": loss}, global_step=self.global_step)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 
@@ -167,7 +169,8 @@ class CNN_AICT_TRANS_SKIP(pl.LightningModule):
     def on_validation_end(self) -> None:
         self.plot_val_cnt = 0
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, data, batch_idx):
+        dataset_idx, batch = data
         x, y = batch
         residual = self(x)
 
