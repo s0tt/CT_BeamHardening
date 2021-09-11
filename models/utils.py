@@ -21,7 +21,8 @@ def parse_dataset_paths(ct_data_path, dataset_names) -> list:
     for entry in data["datasets"]:
         if entry['name'] in dataset_names or isAllData:
             return_list.append(
-                (str(entry["ct"]), str(entry["gt"]), str(entry["name"])))
+                (str(entry["ct"]), str(entry["gt"]), str(entry["name"]), float(entry["material_mode"]))
+            )
     f.close()
     return return_list
 

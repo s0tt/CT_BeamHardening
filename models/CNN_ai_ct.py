@@ -10,10 +10,11 @@ from dataloader import CtVolumeData
 
 
 class CNN_AICT(pl.LightningModule):
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False, vol=None):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False, norm_modes=False, vol=None):
         super().__init__()
         self.ref_img = ref_img
         self.norm = norm
+        self.norm_modes = norm_modes
         self.vol = vol #volume can be used to get dataset name by index for batch
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
         self.plot_val_step = plot_val_step  # n-val images shall be plotted
@@ -92,10 +93,14 @@ class CNN_AICT(pl.LightningModule):
             torch.nn.init.normal_(seq.weight, mean=0.0, std=1.0)
             torch.nn.init.normal_(seq.bias, mean=0.0, std=1.0)
 
-    def forward(self, x):
+    def forward(self, x, dataset_idx=None):
         # in lightning, forward defines the prediction/inference actions
 
         # if normalize parameter set, use normalization over batch layers
+
+        if self.norm_modes:
+            if dataset_idx is not None:
+                x = torch.div(x, self.vol.modes_by_indices(dataset_idx)[:, None, None, None])
 
         if self.norm:
             mean = torch.mean(x, [1, 2, 3])
@@ -112,6 +117,10 @@ class CNN_AICT(pl.LightningModule):
             out = torch.add(torch.multiply(
                 out, std[:, None, None, None]), mean[:, None, None, None])
 
+        if self.norm_modes:
+            if dataset_idx is not None:
+                x = torch.multiply(x, self.vol.modes_by_indices(dataset_idx)[:, None, None, None])
+
         # calculate residual as inference output
         x_2 = torch.unsqueeze(x[:, 2, :, :], dim=1)  # get input middle slices
         residual = x_2 - out  # from input image subtract predicted artefacts
@@ -127,7 +136,8 @@ class CNN_AICT(pl.LightningModule):
         # It is independent of forward
         dataset_idx, batch = data
         x, y = batch
-        residual = self(x)
+
+        residual = self(x, dataset_idx)
 
         # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:, 2, :, :], dim=1)
@@ -143,7 +153,7 @@ class CNN_AICT(pl.LightningModule):
     def validation_step(self, data, batch_idx):
         dataset_idx, batch = data
         x, y = batch
-        residual = self(x)
+        residual = self(x, dataset_idx)
 
         # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:, 2, :, :], dim=1)
@@ -174,7 +184,7 @@ class CNN_AICT(pl.LightningModule):
     def test_step(self, data, batch_idx):
         dataset_idx, batch = data
         x, y = batch
-        residual = self(x)
+        residual = self(x, dataset_idx)
 
         # get label image without neighbour slices
         y_2 = torch.unsqueeze(y[:, 2, :, :], dim=1)

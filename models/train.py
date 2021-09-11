@@ -93,7 +93,9 @@ def main():
     parser.add_argument("--device", "-dv", required=False, default="cuda" if torch.cuda.is_available() else "cpu",
                         help="Device (cuda/cpu)")
     parser.add_argument("--norm", "-no", required=False, action="store_true", default=False,
-                        help="If argument is given (-no) cuse normalization in CNN-AI-CT")
+                        help="If argument is given (-no) use normalization in CNN-AI-CT")
+    parser.add_argument("--norm_modes", "-nm", required=False, action="store_true", default=False,
+                        help="If argument is given (-nm) use mode normalization from Json files in CNN-AI-CT")
     parser = pl.Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -180,7 +182,7 @@ def main():
     if str(args.model).lower() == "cnn-ai-ct":
         if args.transfer_learn_path is None:
             model = CNN_AICT(ref_img=[img_test, gt], plot_test_step=args.plot_test_nr,
-                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init, norm=args.norm, vol=ct_volumes)
+                             plot_val_step=args.plot_val_nr, plot_weights=args.plot_weights, custom_init=args.custom_init, norm=args.norm, norm_modes=args.norm_modes, vol=ct_volumes)
         else:
             model = CNN_AICT.load_from_checkpoint(args.transfer_learn_path)
             # freeze start and middle layers for transfer-learning/fine-tuning of the endLayer to new data
@@ -242,6 +244,7 @@ def main():
             repo_path = os.path.split(args.file_in)[0]
             hash_id, branch = get_git_revision_short_hash(repo_path)
             trainDict = {}
+            batchStats = {}
 
             trainDict["Date"] = datetime.datetime.now().strftime(
                 "%m-%d-%y %H:%M:%S")
@@ -255,6 +258,13 @@ def main():
                                            for dataset in dataset_paths])
             trainDict["Train/Val/Test Len."] = str([len(ct_volumes.dataset_train), len(
                 ct_volumes.dataset_val), len(ct_volumes.dataset_test)])
+            batchStats["{:<35}".format("Dataset Stats")] = "{:<10} | {:>10}".format("Samples", "% Overall") 
+            for idx, dataset in enumerate(ct_volumes.dataset_all.datasets):
+                name_paded = "{:<35}".format(dataset.name)
+                len_datasets = ct_volumes.dataset_all.len_datasets
+                stats_paded = "{:<10} | {:>10}".format(str(len_datasets[idx]), str(len_datasets[idx]/sum(len_datasets) * 100))
+                batchStats[name_paded] = stats_paded
+            trainDict["Stats"] = batchStats
             trainDict["Pytorch Lightning Ver"] = str(pl.__version__)
             trainDict["Torchmetrics Ver"] = str(torchmetrics.__version__)
             trainDict["Len Noisy indexes"] = str(

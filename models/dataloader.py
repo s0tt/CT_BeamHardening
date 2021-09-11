@@ -11,7 +11,7 @@ from torch._utils import _accumulate
 from torch import randperm
 from torch.utils.data import Subset
 import copy
-#from torch.utils.data import random_split
+# from torch.utils.data import random_split
 
 from utils import get_mean_grey_value
 
@@ -33,7 +33,7 @@ class ConcatDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return sum([len(d) for d in self.datasets])
-    
+
     def name_by_index(self, idx):
         i = copy.deepcopy(idx)
         for j in range(self.num_datasets):
@@ -42,6 +42,21 @@ class ConcatDataset(torch.utils.data.Dataset):
             else:
                 i -= self.len_datasets[j]
 
+    def modes_by_indices(self, indices):
+        i = copy.deepcopy(indices)
+        found_modes = torch.zeros_like(indices)
+        material_modes = torch.zeros_like(indices)
+        len_cnt = 0
+
+        for j in range(self.num_datasets):
+            len_cnt += self.len_datasets[j]
+            mask = (i < len_cnt) ^ (found_modes==1)
+            if any(mask):
+                material_modes[mask] = self.datasets[j].material_mode
+                found_modes[mask] = 1
+            if sum(found_modes) >= len(indices): break
+        
+        return material_modes
 
 
 class VolumeDatasetInfere(Dataset):
@@ -90,10 +105,11 @@ class VolumeDatasetInfere(Dataset):
 
         return sample_bh
 
+
 class VolumeDatasetTrain(Dataset):
     """Dataset for a single Volume v2, adapted that rotation axis is in the first dimension"""
 
-    def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, neighbour_img=[-2, 3], transform=None):
+    def __init__(self, file_path_bh, file_path_gt, num_pixel=256, stride=128, neighbour_img=[-2, 3], transform=None, material_mode=1.0):
         """
         Args:
             file_path_bh (string): Path to the hdf5 beam hardening volume data.
@@ -110,6 +126,7 @@ class VolumeDatasetTrain(Dataset):
         self.num_pixel = num_pixel
         self.stride = stride
         self.neighbour_img = neighbour_img
+        self.material_mode = material_mode
 
         with h5py.File(self.file_path_bh, 'r') as h5f:
             self.x, self.y, self.z = h5f['Volume'].shape
@@ -267,7 +284,7 @@ class CtVolumeData(pl.LightningDataModule):
 
         """Split the train and valid dataset"""
         self.dataset_all = ConcatDataset([VolumeDatasetTrain(
-            path[0], path[1], self.num_pixel, self.dataset_stride, neighbour_img=self.neighbour_img) for path in self.paths])
+            path[0], path[1], self.num_pixel, self.dataset_stride, neighbour_img=self.neighbour_img, material_mode=path[3]) for path in self.paths])
         self.dataset_size = len(self.dataset_all)
         split_test = int(np.round(self.test_split * self.dataset_size))
         split_val = int(np.round(self.val_split * self.dataset_size))
@@ -340,3 +357,6 @@ class CtVolumeData(pl.LightningDataModule):
 
     def name_by_index(self, index):
         return self.dataset_all.name_by_index(index)
+
+    def modes_by_indices(self, indices):
+        return self.dataset_all.modes_by_indices(indices)

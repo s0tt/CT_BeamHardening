@@ -3,47 +3,56 @@
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/cable_holder_chain/poly/volume_transposed_and_cutted_fc5_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/cable_holder_chain/mono/volume_transposed_and_cutted_fc5_AL.hdf5",
-            "name": "cable_holder_chain"
+            "name": "cable_holder_chain",
+            "material_mode": 30.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/spielzeugmotor/poly/volume_transposed_and_cutted_fc0_5_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/spielzeugmotor/mono/volume_transposed_and_cutted_fc0_5_AL.hdf5",
-            "name": "spielzeugmotor"
+            "name": "spielzeugmotor",
+            "material_mode": 28.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/balls_bh/poly/volume_transposed_and_cutted_fc1_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/balls_bh/mono/volume_transposed_and_cutted_fc1_AL.hdf5",
-            "name": "ball_bh"
+            "name": "ball_bh",
+            "material_mode": 1.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/poly/volume_transposed_and_cutted_fc02_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/zuendkerze/mono/volume_transposed_and_cutted_fc02_AL.hdf5",
-            "name": "zuendkerze"
+            "name": "zuendkerze",
+            "material_mode": 85.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/poly/volume_transposed_and_cutted_2_fc0_3_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/grating_holder/mono/volume_transposed_and_cutted_2_fc0_3_AL.hdf5",
-            "name": "grating_holder"
+            "name": "grating_holder",
+            "material_mode": 30.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/flute/poly/volume_transposed_and_cutted_fc1_cont_AL.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/flute/mono/volume_transposed_and_cutted_fc1_cont_AL.hdf5",
-            "name": "flute"
+            "name": "flute",
+            "material_mode": 1.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/poly/volume_transposed_and_cutted_fc0_5_CU.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/schraube/mono/volume_transposed_and_cutted_fc0_5_CU.hdf5",
-            "name": "schraube"
+            "name": "schraube",
+            "material_mode": 820.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/dragon/poly/volume_transposed_and_cutted_fc0_5_CU.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/dragon/mono/volume_transposed_and_cutted_fc0_5_CU.hdf5",
-            "name": "dragon"
+            "name": "dragon",
+            "material_mode": 746.0
         },
         {
             "ct": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/garuda_vishnu/poly/volume_transposed_and_cutted_fc0_5_CU.hdf5",
             "gt": "/net/pasnas01.informatik.uni-stuttgart.de/pool1/enpro-2021-voxie/reconstructed_volumes/garuda_vishnu/mono/volume_transposed_and_cutted_fc0_5_CU.hdf5",
-            "name": "garuda_vishnu"
+            "name": "garuda_vishnu",
+            "material_mode": 1.0
         }
     ]
 }
