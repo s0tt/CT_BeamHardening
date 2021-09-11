@@ -284,7 +284,7 @@ def main():
 
     # Run learning rate finder
     if args.auto_lr_find:
-        lr_finder = trainer.tuner.lr_find(model)
+        lr_finder = trainer.tuner.lr_find(model, datamodule=ct_volumes)
 
         # Plot with
         fig = lr_finder.plot(suggest=True)

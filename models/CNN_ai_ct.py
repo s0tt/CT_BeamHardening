@@ -11,7 +11,7 @@ from dataloader import CtVolumeData
 
 class CNN_AICT(pl.LightningModule):
     def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, 
-    custom_init=False, norm=False, norm_modes=False, vol=None, learning_rate=1e-4):
+    custom_init=False, norm=False, norm_modes=False, vol=None, learning_rate=1e-4, plot_activations=None):
         super().__init__()
         self.ref_img = ref_img
         self.norm = norm
@@ -23,6 +23,7 @@ class CNN_AICT(pl.LightningModule):
         self.plot_test_cnt = 0
         self.plot_val_cnt = 0
         self.plot_weights = plot_weights
+        self.plot_activations = plot_activations
         metrics = MetricCollection([PSNR(), MeanAbsoluteError()])
         self.train_metrics = metrics.clone(prefix='train_')
         self.val_metrics = metrics.clone(prefix='val_')
@@ -283,7 +284,8 @@ class CNN_AICT(pl.LightningModule):
 
     def training_epoch_end(self, outputs) -> None:
         if self.ref_img is not None:
-            self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
+            if self.plot_activations is not None:
+                self.show_activations(self.ref_img[0].type_as(outputs[0]["loss"]))
 
             # for all reference images plot model prediction after epoch
             for idx in range(self.ref_img[0].shape[0]):
