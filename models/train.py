@@ -282,6 +282,18 @@ def main():
         plugins=plugin
     )
 
+    # Run learning rate finder
+    if args.auto_lr_find:
+        lr_finder = trainer.tuner.lr_find(model)
+
+        # Plot with
+        fig = lr_finder.plot(suggest=True)
+        fig.savefig(tb_logger.log_dir + "/lr_find_result.png")
+
+        with open(tb_logger.log_dir + "/lr_find_result.json", "w+") as f:
+            json.dump(lr_finder.results, f, indent=4)
+            f.close()
+
     # fit model
     trainer.fit(model, datamodule=ct_volumes)
 

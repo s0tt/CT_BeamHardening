@@ -10,11 +10,13 @@ from dataloader import CtVolumeData
 
 
 class CNN_AICT(pl.LightningModule):
-    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, custom_init=False, norm=False, norm_modes=False, vol=None):
+    def __init__(self, ref_img=None, plot_test_step=None, plot_val_step=None, plot_weights=False, 
+    custom_init=False, norm=False, norm_modes=False, vol=None, learning_rate=1e-4):
         super().__init__()
         self.ref_img = ref_img
         self.norm = norm
         self.norm_modes = norm_modes
+        self.learning_rate = learning_rate
         self.vol = vol #volume can be used to get dataset name by index for batch
         self.plot_test_step = plot_test_step  # n-test images shall be plotted
         self.plot_val_step = plot_val_step  # n-val images shall be plotted
@@ -297,5 +299,5 @@ class CNN_AICT(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.parameters(), lr=1e-3, betas=(0.9, 0.999))
+            self.parameters(), lr=self.learning_rate, betas=(0.9, 0.999))
         return optimizer
