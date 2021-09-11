@@ -26,7 +26,10 @@
                 "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelPath": {
                     "Name": "ModelPath",
                     "DisplayName": "Model Path",
-                    "Type": "de.uni_stuttgart.Voxie.PropertyType.String",
+                    "Type": "de.uni_stuttgart.Voxie.PropertyType.FileName",
+                    "Patterns": [
+                        "*.pt"
+                    ],
                     "DefaultValue": "/your/model/path/"
                 },
                 "de.uni_stuttgart.Voxie.Filter.PytorchModel.ModelType": {
